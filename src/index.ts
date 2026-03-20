@@ -9,6 +9,9 @@ export {
 	ControlRecordType,
 	type RawRecord,
 	type DecodedRecord,
+	type DataRecord,
+	type ControlRecord,
+	isDataRecord,
 	RecordType,
 	type StructPayload,
 } from './types.js';

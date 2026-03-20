@@ -71,6 +71,17 @@ export type StructPayload = Map<
 	number | boolean | bigint | string | StructPayload | number[] | boolean[] | bigint[] | StructPayload[]
 >;
 
+/** A decoded data record (excludes control records). */
+export type DataRecord = Extract<DecodedRecord, { name: string }>;
+
+/** A decoded control record. */
+export type ControlRecord = Extract<DecodedRecord, { type: RecordType.Control }>;
+
+/** Type guard that narrows a {@link DecodedRecord} to a {@link DataRecord}. */
+export function isDataRecord(record: DecodedRecord): record is DataRecord {
+	return record.type !== RecordType.Control;
+}
+
 /** A decoded data log record. */
 export type DecodedRecord = {
 	entryId: number;

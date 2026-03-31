@@ -1,0 +1,44 @@
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+name: release-please
+
+jobs:
+  release-please:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run release-please
+        uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release-type: node
+      - name: Checkout Git repository
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/checkout@v6
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 'lts/*'
+          registry-url: 'https://registry.npmjs.org'
+        if: ${{ steps.release.outputs.release_created }}
+      - name: Setup Bun
+        if: ${{ steps.release.outputs.release_created }}
+        uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        if: ${{ steps.release.outputs.release_created }}
+        run: bun install --frozen-lockfile
+      - name: Build and test
+        run: bun run build && bun run test
+        if: ${{ steps.release.outputs.release_created }}
+      - name: Publish to npm
+        run: npm publish --provenance
+        if: ${{ steps.release.outputs.release_created }}

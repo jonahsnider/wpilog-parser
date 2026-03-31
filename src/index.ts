@@ -1,4 +1,4 @@
-export { readRecords, type ReadRecord } from './read-records.js';
+export { readRecords, type ReadRecord, type DataLogInput } from './read-records.js';
 export { decodeRecords } from './decode-records.js';
 export {
 	type DataLogHeader,
@@ -16,6 +16,7 @@ export {
 	type StructPayload,
 } from './types.js';
 export { structPayloadToJson } from './struct-payload-to-json.js';
+export { catalogEntries, type CatalogEntry } from './catalog.js';
 export { parseStructSpecification } from './struct/parse-struct.js';
 export {
 	type StructDeclaration,

@@ -177,14 +177,24 @@ export type ReadRecord =
 	  }
 	| { kind: 'data'; record: RawRecord };
 
+/** Accepted input types for {@link readRecords}. */
+export type DataLogInput = ReadableStream<Uint8Array> | Uint8Array | ArrayBuffer;
+
+function toReadableStream(input: DataLogInput): ReadableStream<Uint8Array> {
+	if (input instanceof ReadableStream) {
+		return input;
+	}
+	return new Blob([input as ArrayBuffer | Uint8Array<ArrayBuffer>]).stream();
+}
+
 /**
  * Read raw WPILOG records from a byte stream.
  *
  * Yields a header record first, then control and data records in order.
  * Data record payloads are not decoded — use {@link decodeRecords} for that.
  */
-export async function* readRecords(stream: ReadableStream<Uint8Array>): AsyncGenerator<ReadRecord> {
-	const inputStream = new InputStream(stream);
+export async function* readRecords(input: DataLogInput): AsyncGenerator<ReadRecord> {
+	const inputStream = new InputStream(toReadableStream(input));
 
 	const header = await readHeader(inputStream);
 	yield { kind: 'header', header };

@@ -24,10 +24,11 @@ jobs:
       - name: Checkout Git repository
         if: ${{ steps.release.outputs.release_created }}
         uses: actions/checkout@v6
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
         with:
-          node-version: 'lts/*'
+          node-version: 'lts'
+          cache: true
           registry-url: 'https://registry.npmjs.org'
         if: ${{ steps.release.outputs.release_created }}
       - name: Setup Bun

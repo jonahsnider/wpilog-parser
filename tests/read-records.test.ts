@@ -5,7 +5,7 @@ import { ControlRecordType } from '../src/types.js';
 const TEXT_ENCODER = new TextEncoder();
 
 function streamFromBytes(bytes: Uint8Array): ReadableStream<Uint8Array> {
-	return new Blob([bytes] as BlobPart[]).stream();
+	return new Blob([bytes]).stream();
 }
 
 /** Build a minimal WPILOG file with the given records appended after the header. */

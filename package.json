@@ -37,10 +37,10 @@
 		"chevrotain": "^12.0.0"
 	},
 	"devDependencies": {
-		"@types/node": "^25.5.0",
+		"@types/node": "24.12.0",
 		"@typescript/native-preview": "7.0.0-dev.20260316.1",
-		"typescript": "^5.9.3",
-		"vite-plus": "^0.1.11"
+		"typescript": "5.9.3",
+		"vite-plus": "0.1.11"
 	},
 	"overrides": {
 		"vite": "npm:@voidzero-dev/vite-plus-core@latest",

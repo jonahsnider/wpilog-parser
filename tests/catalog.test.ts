@@ -59,7 +59,7 @@ describe('catalogEntries', () => {
 			buildStartControlRecord(2, 'DS:enabled', 'boolean', ''),
 		);
 
-		const catalog = catalogEntries(readRecords(wpilog));
+		const catalog = await Array.fromAsync(catalogEntries(readRecords(wpilog)));
 
 		expect(catalog).toStrictEqual([
 			{ entryId: 1, name: 'Robot/Pose', type: 'struct:Pose2d', metadata: '' },
@@ -69,7 +69,7 @@ describe('catalogEntries', () => {
 
 	test('returns empty array for file with no entries', async () => {
 		const wpilog = buildWpilog();
-		const catalog = await catalogEntries(readRecords(wpilog));
+		const catalog = await Array.fromAsync(catalogEntries(readRecords(wpilog)));
 		expect(catalog).toStrictEqual([]);
 	});
 });

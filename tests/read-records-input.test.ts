@@ -31,7 +31,7 @@ describe('readRecords input types', () => {
 
 	test('accepts ReadableStream', async () => {
 		const bytes = buildMinimalWpilog();
-		const stream = new Blob([bytes] as BlobPart[]).stream();
+		const stream = new Blob([bytes]).stream();
 		const records = [];
 		for await (const record of readRecords(stream)) {
 			records.push(record);

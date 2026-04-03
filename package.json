@@ -1,6 +1,6 @@
 {
 	"name": "wpilog-parser",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Read WPILib wpilog data log files in TypeScript & JavaScript",
 	"homepage": "https://github.com/jonahsnider/wpilog-parser#readme",
 	"license": "MIT",

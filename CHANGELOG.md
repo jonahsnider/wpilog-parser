@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/jonahsnider/wpilog-js/compare/v1.0.0...v1.0.1) (2026-04-03)
+
+
+### Bug Fixes
+
+* rename to wpilog-parser ([1b3258d](https://github.com/jonahsnider/wpilog-js/commit/1b3258d52c9e0118ce51c7203c4349195a336291))
+
 ## 1.0.0 (2026-03-31)
 
 

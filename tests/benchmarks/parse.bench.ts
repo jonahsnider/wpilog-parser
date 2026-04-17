@@ -16,8 +16,20 @@ for (const fixture of FIXTURES) {
 			}
 		});
 
+		bench('decodeRecords (fast path)', () => {
+			for (const _record of decodeRecords(fixture.bytes)) {
+				// discard
+			}
+		});
+
 		bench('catalogEntries', () => {
 			for (const _entry of catalogEntries(readRecords(fixture.bytes))) {
+				// discard
+			}
+		});
+
+		bench('catalogEntries (fast path)', () => {
+			for (const _entry of catalogEntries(fixture.bytes)) {
 				// discard
 			}
 		});

@@ -1,33 +1,31 @@
-import { ByteOffset } from './byte-offset.js';
 import { type ControlRecordPayload, ControlRecordType, type DataLogHeader, type RawRecord } from './types.js';
 
 const TEXT_ENCODER = new TextEncoder();
 const TEXT_DECODER = new TextDecoder();
 const MAGIC = TEXT_ENCODER.encode('WPILOG');
 
-function readControlRecordPayload(payload: Uint8Array): ControlRecordPayload {
-	const offset = new ByteOffset();
-	const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
+function readControlRecordPayload(payload: Uint8Array, view: DataView): ControlRecordPayload {
+	const base = payload.byteOffset;
+	let offset = base;
 
-	const type = view.getUint8(offset.get());
-	offset.advance8();
+	const type = view.getUint8(offset);
+	offset += 1;
 
 	switch (type) {
 		case ControlRecordType.Start: {
-			const entryId = view.getUint32(offset.get(), true);
-			offset.advance32();
-			const entryNameLength = view.getUint32(offset.get(), true);
-			offset.advance32();
-			const entryName = TEXT_DECODER.decode(payload.subarray(offset.get(), offset.get() + entryNameLength));
-			offset.advance(entryNameLength);
-			const entryTypeLength = view.getUint32(offset.get(), true);
-			offset.advance32();
-			const entryType = TEXT_DECODER.decode(payload.subarray(offset.get(), offset.get() + entryTypeLength));
-			offset.advance(entryTypeLength);
-			const entryMetadataLength = view.getUint32(offset.get(), true);
-			offset.advance32();
-			const entryMetadata = TEXT_DECODER.decode(payload.subarray(offset.get(), offset.get() + entryMetadataLength));
-			offset.advance(entryMetadataLength);
+			const entryId = view.getUint32(offset, true);
+			offset += 4;
+			const entryNameLength = view.getUint32(offset, true);
+			offset += 4;
+			const entryName = TEXT_DECODER.decode(payload.subarray(offset - base, offset - base + entryNameLength));
+			offset += entryNameLength;
+			const entryTypeLength = view.getUint32(offset, true);
+			offset += 4;
+			const entryType = TEXT_DECODER.decode(payload.subarray(offset - base, offset - base + entryTypeLength));
+			offset += entryTypeLength;
+			const entryMetadataLength = view.getUint32(offset, true);
+			offset += 4;
+			const entryMetadata = TEXT_DECODER.decode(payload.subarray(offset - base, offset - base + entryMetadataLength));
 
 			return {
 				controlRecordType: type,
@@ -38,17 +36,15 @@ function readControlRecordPayload(payload: Uint8Array): ControlRecordPayload {
 			};
 		}
 		case ControlRecordType.Finish: {
-			const entryId = view.getUint32(offset.get(), true);
-			offset.advance32();
+			const entryId = view.getUint32(offset, true);
 			return { controlRecordType: type, entryId };
 		}
 		case ControlRecordType.SetMetadata: {
-			const entryId = view.getUint32(offset.get(), true);
-			offset.advance32();
-			const entryMetadataLength = view.getUint32(offset.get(), true);
-			offset.advance32();
-			const entryMetadata = TEXT_DECODER.decode(payload.subarray(offset.get(), offset.get() + entryMetadataLength));
-			offset.advance(entryMetadataLength);
+			const entryId = view.getUint32(offset, true);
+			offset += 4;
+			const entryMetadataLength = view.getUint32(offset, true);
+			offset += 4;
+			const entryMetadata = TEXT_DECODER.decode(payload.subarray(offset - base, offset - base + entryMetadataLength));
 			return { controlRecordType: type, entryId, entryMetadata };
 		}
 		default:
@@ -92,46 +88,34 @@ function readVarInt(view: DataView, offset: number, length: number): number {
 	}
 }
 
+const TWO_POW_32 = 0x1_0000_0000n;
+
 function readTimestamp(view: DataView, offset: number, length: number): bigint {
 	switch (length) {
 		case 1:
 			return BigInt(view.getUint8(offset));
 		case 2:
 			return BigInt(view.getUint16(offset, true));
-		case 3: {
-			const b0 = BigInt(view.getUint8(offset));
-			const b1 = BigInt(view.getUint8(offset + 1));
-			const b2 = BigInt(view.getUint8(offset + 2));
-			return (b2 << 16n) | (b1 << 8n) | b0;
-		}
+		case 3:
+			return BigInt((view.getUint8(offset + 2) << 16) | (view.getUint8(offset + 1) << 8) | view.getUint8(offset));
 		case 4:
 			return BigInt(view.getUint32(offset, true));
 		case 5: {
-			const b0 = BigInt(view.getUint8(offset));
-			const b1 = BigInt(view.getUint8(offset + 1));
-			const b2 = BigInt(view.getUint8(offset + 2));
-			const b3 = BigInt(view.getUint8(offset + 3));
-			const b4 = BigInt(view.getUint8(offset + 4));
-			return (b4 << 32n) | (b3 << 24n) | (b2 << 16n) | (b1 << 8n) | b0;
+			const lo = view.getUint32(offset, true);
+			const hi = view.getUint8(offset + 4);
+			return BigInt(hi) * TWO_POW_32 + BigInt(lo);
 		}
 		case 6: {
-			const b0 = BigInt(view.getUint8(offset));
-			const b1 = BigInt(view.getUint8(offset + 1));
-			const b2 = BigInt(view.getUint8(offset + 2));
-			const b3 = BigInt(view.getUint8(offset + 3));
-			const b4 = BigInt(view.getUint8(offset + 4));
-			const b5 = BigInt(view.getUint8(offset + 5));
-			return (b5 << 40n) | (b4 << 32n) | (b3 << 24n) | (b2 << 16n) | (b1 << 8n) | b0;
+			const lo = view.getUint32(offset, true);
+			const hi = view.getUint16(offset + 4, true);
+			return BigInt(hi) * TWO_POW_32 + BigInt(lo);
 		}
 		case 7: {
-			const b0 = BigInt(view.getUint8(offset));
-			const b1 = BigInt(view.getUint8(offset + 1));
-			const b2 = BigInt(view.getUint8(offset + 2));
-			const b3 = BigInt(view.getUint8(offset + 3));
-			const b4 = BigInt(view.getUint8(offset + 4));
-			const b5 = BigInt(view.getUint8(offset + 5));
-			const b6 = BigInt(view.getUint8(offset + 6));
-			return (b6 << 48n) | (b5 << 40n) | (b4 << 32n) | (b3 << 24n) | (b2 << 16n) | (b1 << 8n) | b0;
+			const lo = view.getUint32(offset, true);
+			const hiLow = view.getUint16(offset + 4, true);
+			const hiHigh = view.getUint8(offset + 6);
+			const hi = (hiHigh << 16) | hiLow;
+			return BigInt(hi) * TWO_POW_32 + BigInt(lo);
 		}
 		case 8:
 			return view.getBigUint64(offset, true);
@@ -208,10 +192,69 @@ export function* readRecords(input: DataLogInput): Generator<ReadRecord> {
 		offset += payloadSize;
 
 		if (entryId === 0) {
-			const controlPayload = readControlRecordPayload(payload);
+			const controlPayload = readControlRecordPayload(payload, view);
 			yield { kind: 'control', entryId, timestamp, payload: controlPayload };
 		} else {
 			yield { kind: 'data', record: { entryId, timestamp, payload } };
 		}
+	}
+}
+
+/**
+ * Internal: Iterate only the control record payloads, skipping data record payload allocation.
+ *
+ * Used by `catalogEntries` fast path. Not part of the public API.
+ */
+export function* readControlRecordsOnly(input: DataLogInput): Generator<ControlRecordPayload> {
+	const bytes = toUint8Array(input);
+	const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+	const total = bytes.byteLength;
+
+	if (total < 12) {
+		throw new Error('Not a WPILOG file (truncated header)');
+	}
+
+	for (let i = 0; i < MAGIC.byteLength; i++) {
+		if (bytes[i] !== MAGIC[i]) {
+			throw new Error('Not a WPILOG file (invalid magic bytes)');
+		}
+	}
+
+	const extraHeaderLength = view.getUint32(8, true);
+	let offset = 12;
+
+	if (offset + extraHeaderLength > total) {
+		throw new Error('Not a WPILOG file (truncated extra header)');
+	}
+
+	offset += extraHeaderLength;
+
+	while (offset < total) {
+		const bitfield = view.getUint8(offset);
+		offset += 1;
+
+		const entryIdLength = 1 + (bitfield & 0b11);
+		const payloadSizeLength = 1 + ((bitfield >> 2) & 0b11);
+		const timestampLength = 1 + ((bitfield >> 4) & 0b111);
+
+		if (offset + entryIdLength + payloadSizeLength + timestampLength > total) {
+			return;
+		}
+
+		const entryId = readVarInt(view, offset, entryIdLength);
+		offset += entryIdLength;
+		const payloadSize = readVarInt(view, offset, payloadSizeLength);
+		offset += payloadSizeLength + timestampLength;
+
+		if (offset + payloadSize > total) {
+			return;
+		}
+
+		if (entryId === 0) {
+			const payload = bytes.subarray(offset, offset + payloadSize);
+			yield readControlRecordPayload(payload, view);
+		}
+
+		offset += payloadSize;
 	}
 }

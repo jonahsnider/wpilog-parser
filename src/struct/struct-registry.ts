@@ -1,4 +1,3 @@
-import { ByteOffset } from '../byte-offset.js';
 import type { StructPayload } from '../types.js';
 import { parseStructSpecification } from './parse-struct.js';
 import type { StructDecodeQueue } from './struct-decode-queue.js';
@@ -6,12 +5,24 @@ import { KnownStructTypeName, type StructDeclaration, type StructSpecification }
 
 const STRUCT_ARRAY_SUFFIX = '[]';
 
+type DecodeState = { offset: number };
+
 export class StructRegistry {
 	private static readonly TEXT_DECODER = new TextDecoder('utf-8');
 	private readonly definitions = new Map<string, StructSpecification>();
 	private readonly byteLengths = new Map<string, number>();
+	private cachedView: DataView | undefined;
+	private cachedBuffer: ArrayBufferLike | undefined;
 
 	constructor(private readonly structDecodeQueue: StructDecodeQueue) {}
+
+	private getView(payload: Uint8Array): DataView {
+		if (this.cachedBuffer !== payload.buffer) {
+			this.cachedView = new DataView(payload.buffer);
+			this.cachedBuffer = payload.buffer;
+		}
+		return this.cachedView as DataView;
+	}
 
 	register(name: string, definition: string): void {
 		const specification = parseStructSpecification(definition);
@@ -42,24 +53,40 @@ export class StructRegistry {
 		}
 
 		const elements = payload.byteLength / structByteLengthOrBlocker;
-		const offset = new ByteOffset();
+		const view = this.getView(payload);
 
-		const result: StructPayload[] = [];
+		const result: StructPayload[] = new Array(elements);
+		const state: DecodeState = { offset: payload.byteOffset };
 
 		for (let i = 0; i < elements; i++) {
-			const decoded = this.decode(structNameWithoutSuffix, payload, offset);
+			const decoded = this.decodeInternal(structNameWithoutSuffix, payload, view, state);
 			if (typeof decoded === 'string') {
 				throw new TypeError(
 					`Expected struct ${structNameWithoutSuffix} to be defined if the byte length calculation succeeded`,
 				);
 			}
-			result.push(decoded);
+			result[i] = decoded;
 		}
 
 		return result;
 	}
 
-	decode(structName: string, payload: Uint8Array, offset = new ByteOffset()): StructPayload | string {
+	decode(structName: string, payload: Uint8Array): StructPayload | string {
+		if (!this.definitions.has(structName)) {
+			return structName;
+		}
+
+		const view = this.getView(payload);
+		const state: DecodeState = { offset: payload.byteOffset };
+		return this.decodeInternal(structName, payload, view, state);
+	}
+
+	private decodeInternal(
+		structName: string,
+		payload: Uint8Array,
+		view: DataView,
+		state: DecodeState,
+	): StructPayload | string {
 		if (!this.definitions.has(structName)) {
 			return structName;
 		}
@@ -67,187 +94,201 @@ export class StructRegistry {
 		const specification = this.getDefinition(structName);
 		const result: StructPayload = new Map();
 
-		const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
-
 		for (const member of specification) {
 			if (member.bitWidth) {
 				throw new Error('Bit-field members are not implemented');
 			}
 
+			const arraySize = member.arraySize;
+
 			switch (member.value) {
 				case KnownStructTypeName.Boolean:
-					if (member.arraySize !== undefined) {
-						const array: boolean[] = [];
-						for (let i = 0; i < member.arraySize; i++) {
-							array.push(Boolean(view.getUint8(offset.get())));
-							offset.advance8();
+					if (arraySize !== undefined) {
+						const array: boolean[] = new Array(arraySize);
+						let offset = state.offset;
+						for (let i = 0; i < arraySize; i++) {
+							array[i] = Boolean(view.getUint8(offset));
+							offset += 1;
 						}
+						state.offset = offset;
 						result.set(member.name, array);
 					} else {
-						result.set(member.name, Boolean(view.getUint8(offset.get())));
-						offset.advance8();
+						result.set(member.name, Boolean(view.getUint8(state.offset)));
+						state.offset += 1;
 					}
 					break;
 				case KnownStructTypeName.Int8:
-					if (member.arraySize !== undefined) {
-						const array: number[] = [];
-						for (let i = 0; i < member.arraySize; i++) {
-							array.push(view.getInt8(offset.get()));
-							offset.advance8();
+					if (arraySize !== undefined) {
+						const array: number[] = new Array(arraySize);
+						let offset = state.offset;
+						for (let i = 0; i < arraySize; i++) {
+							array[i] = view.getInt8(offset);
+							offset += 1;
 						}
+						state.offset = offset;
 						result.set(member.name, array);
 					} else {
-						result.set(member.name, view.getInt8(offset.get()));
-						offset.advance8();
+						result.set(member.name, view.getInt8(state.offset));
+						state.offset += 1;
 					}
 					break;
 				case KnownStructTypeName.Int16:
-					if (member.arraySize !== undefined) {
-						const array: number[] = [];
-						for (let i = 0; i < member.arraySize; i++) {
-							array.push(view.getInt16(offset.get(), true));
-							offset.advance16();
+					if (arraySize !== undefined) {
+						const array: number[] = new Array(arraySize);
+						let offset = state.offset;
+						for (let i = 0; i < arraySize; i++) {
+							array[i] = view.getInt16(offset, true);
+							offset += 2;
 						}
+						state.offset = offset;
 						result.set(member.name, array);
 					} else {
-						result.set(member.name, view.getInt16(offset.get(), true));
-						offset.advance16();
+						result.set(member.name, view.getInt16(state.offset, true));
+						state.offset += 2;
 					}
 					break;
 				case KnownStructTypeName.Int32:
-					if (member.arraySize !== undefined) {
-						const array: number[] = [];
-						for (let i = 0; i < member.arraySize; i++) {
-							array.push(view.getInt32(offset.get(), true));
-							offset.advance32();
+					if (arraySize !== undefined) {
+						const array: number[] = new Array(arraySize);
+						let offset = state.offset;
+						for (let i = 0; i < arraySize; i++) {
+							array[i] = view.getInt32(offset, true);
+							offset += 4;
 						}
+						state.offset = offset;
 						result.set(member.name, array);
 					} else {
-						result.set(member.name, view.getInt32(offset.get(), true));
-						offset.advance32();
+						result.set(member.name, view.getInt32(state.offset, true));
+						state.offset += 4;
 					}
 					break;
 				case KnownStructTypeName.Int64:
-					if (member.arraySize !== undefined) {
-						const array: bigint[] = [];
-						for (let i = 0; i < member.arraySize; i++) {
-							array.push(view.getBigInt64(offset.get(), true));
-							offset.advance64();
+					if (arraySize !== undefined) {
+						const array: bigint[] = new Array(arraySize);
+						let offset = state.offset;
+						for (let i = 0; i < arraySize; i++) {
+							array[i] = view.getBigInt64(offset, true);
+							offset += 8;
 						}
+						state.offset = offset;
 						result.set(member.name, array);
 					} else {
-						result.set(member.name, view.getBigInt64(offset.get(), true));
-						offset.advance64();
+						result.set(member.name, view.getBigInt64(state.offset, true));
+						state.offset += 8;
 					}
 					break;
 				case KnownStructTypeName.Uint8:
-					if (member.arraySize !== undefined) {
-						const array: number[] = [];
-						for (let i = 0; i < member.arraySize; i++) {
-							array.push(view.getUint8(offset.get()));
-							offset.advance8();
+					if (arraySize !== undefined) {
+						const array: number[] = new Array(arraySize);
+						let offset = state.offset;
+						for (let i = 0; i < arraySize; i++) {
+							array[i] = view.getUint8(offset);
+							offset += 1;
 						}
+						state.offset = offset;
 						result.set(member.name, array);
 					} else {
-						result.set(member.name, view.getUint8(offset.get()));
-						offset.advance8();
+						result.set(member.name, view.getUint8(state.offset));
+						state.offset += 1;
 					}
 					break;
 				case KnownStructTypeName.Uint16:
-					if (member.arraySize !== undefined) {
-						const array: number[] = [];
-						for (let i = 0; i < member.arraySize; i++) {
-							array.push(view.getUint16(offset.get(), true));
-							offset.advance16();
+					if (arraySize !== undefined) {
+						const array: number[] = new Array(arraySize);
+						let offset = state.offset;
+						for (let i = 0; i < arraySize; i++) {
+							array[i] = view.getUint16(offset, true);
+							offset += 2;
 						}
+						state.offset = offset;
 						result.set(member.name, array);
 					} else {
-						result.set(member.name, view.getUint16(offset.get(), true));
-						offset.advance16();
+						result.set(member.name, view.getUint16(state.offset, true));
+						state.offset += 2;
 					}
 					break;
 				case KnownStructTypeName.Uint32:
-					if (member.arraySize !== undefined) {
-						const array: number[] = [];
-						for (let i = 0; i < member.arraySize; i++) {
-							array.push(view.getUint32(offset.get(), true));
-							offset.advance32();
+					if (arraySize !== undefined) {
+						const array: number[] = new Array(arraySize);
+						let offset = state.offset;
+						for (let i = 0; i < arraySize; i++) {
+							array[i] = view.getUint32(offset, true);
+							offset += 4;
 						}
+						state.offset = offset;
 						result.set(member.name, array);
 					} else {
-						result.set(member.name, view.getUint32(offset.get(), true));
-						offset.advance32();
+						result.set(member.name, view.getUint32(state.offset, true));
+						state.offset += 4;
 					}
 					break;
 				case KnownStructTypeName.Uint64:
-					if (member.arraySize !== undefined) {
-						const array: bigint[] = [];
-						for (let i = 0; i < member.arraySize; i++) {
-							array.push(view.getBigUint64(offset.get(), true));
-							offset.advance64();
+					if (arraySize !== undefined) {
+						const array: bigint[] = new Array(arraySize);
+						let offset = state.offset;
+						for (let i = 0; i < arraySize; i++) {
+							array[i] = view.getBigUint64(offset, true);
+							offset += 8;
 						}
+						state.offset = offset;
 						result.set(member.name, array);
 					} else {
-						result.set(member.name, view.getBigUint64(offset.get(), true));
-						offset.advance64();
+						result.set(member.name, view.getBigUint64(state.offset, true));
+						state.offset += 8;
 					}
 					break;
 				case KnownStructTypeName.Float32:
 				case KnownStructTypeName.Float:
-					if (member.arraySize !== undefined) {
-						const array: number[] = [];
-						for (let i = 0; i < member.arraySize; i++) {
-							array.push(view.getFloat32(offset.get(), true));
-							offset.advance32();
+					if (arraySize !== undefined) {
+						const array: number[] = new Array(arraySize);
+						let offset = state.offset;
+						for (let i = 0; i < arraySize; i++) {
+							array[i] = view.getFloat32(offset, true);
+							offset += 4;
 						}
+						state.offset = offset;
 						result.set(member.name, array);
 					} else {
-						result.set(member.name, view.getFloat32(offset.get(), true));
-						offset.advance32();
+						result.set(member.name, view.getFloat32(state.offset, true));
+						state.offset += 4;
 					}
 					break;
 				case KnownStructTypeName.Float64:
 				case KnownStructTypeName.Double:
-					if (member.arraySize !== undefined) {
-						const array: number[] = [];
-						for (let i = 0; i < member.arraySize; i++) {
-							array.push(view.getFloat64(offset.get(), true));
-							offset.advance64();
+					if (arraySize !== undefined) {
+						const array: number[] = new Array(arraySize);
+						let offset = state.offset;
+						for (let i = 0; i < arraySize; i++) {
+							array[i] = view.getFloat64(offset, true);
+							offset += 8;
 						}
+						state.offset = offset;
 						result.set(member.name, array);
 					} else {
-						result.set(member.name, view.getFloat64(offset.get(), true));
-						offset.advance64();
+						result.set(member.name, view.getFloat64(state.offset, true));
+						state.offset += 8;
 					}
 					break;
-				case KnownStructTypeName.Character:
-					if (member.arraySize !== undefined) {
-						result.set(
-							member.name,
-							StructRegistry.TEXT_DECODER.decode(
-								payload.subarray(offset.get(), offset.advance(member.arraySize).get()),
-							),
-						);
-					} else {
-						result.set(
-							member.name,
-							StructRegistry.TEXT_DECODER.decode(payload.subarray(offset.get(), offset.advance8().get())),
-						);
-					}
+				case KnownStructTypeName.Character: {
+					const len = arraySize ?? 1;
+					const relStart = state.offset - payload.byteOffset;
+					result.set(member.name, StructRegistry.TEXT_DECODER.decode(payload.subarray(relStart, relStart + len)));
+					state.offset += len;
 					break;
+				}
 				default: {
-					if (member.arraySize !== undefined) {
-						const array: StructPayload[] = [];
-						for (let i = 0; i < member.arraySize; i++) {
-							const decoded = this.decode(member.value, payload, offset);
+					if (arraySize !== undefined) {
+						const array: StructPayload[] = new Array(arraySize);
+						for (let i = 0; i < arraySize; i++) {
+							const decoded = this.decodeInternal(member.value, payload, view, state);
 							if (typeof decoded === 'string') {
 								return decoded;
 							}
-							array.push(decoded);
+							array[i] = decoded;
 						}
 						result.set(member.name, array);
 					} else {
-						const decoded = this.decode(member.value, payload, offset);
+						const decoded = this.decodeInternal(member.value, payload, view, state);
 						if (typeof decoded === 'string') {
 							return decoded;
 						}

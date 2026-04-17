@@ -1,5 +1,4 @@
-import { ByteOffset } from './byte-offset.js';
-import type { ReadRecord } from './read-records.js';
+import { type DataLogInput, type ReadRecord, readRecords } from './read-records.js';
 import { StructDecodeQueue } from './struct/struct-decode-queue.js';
 import { StructRegistry } from './struct/struct-registry.js';
 import { ControlRecordType, type DecodedRecord, type RawRecord, RecordType, type StartControlRecord } from './types.js';
@@ -7,6 +6,11 @@ import { ControlRecordType, type DecodedRecord, type RawRecord, RecordType, type
 const TEXT_DECODER = new TextDecoder();
 const STRUCT_PREFIX = 'struct:';
 const STRUCT_ARRAY_SUFFIX = '[]';
+const IS_LITTLE_ENDIAN = (() => {
+	const buf = new ArrayBuffer(2);
+	new DataView(buf).setUint16(0, 1, true);
+	return new Uint16Array(buf)[0] === 1;
+})();
 
 function byteToBoolean(byte: number): boolean {
 	switch (byte) {
@@ -29,10 +33,13 @@ function normalizeEntryName(rawName: string): string {
 /**
  * Decode raw WPILOG records into typed values.
  *
- * Accepts the output of {@link readRecords} and yields fully decoded records,
- * including struct decoding with dependency resolution.
+ * Accepts either the output of {@link readRecords} or raw WPILOG bytes directly.
+ * Passing raw bytes is faster because it avoids composing two generators.
+ * Yields fully decoded records, including struct decoding with dependency resolution.
  */
-export function* decodeRecords(records: Iterable<ReadRecord>): Generator<DecodedRecord> {
+export function* decodeRecords(input: Iterable<ReadRecord> | DataLogInput): Generator<DecodedRecord> {
+	const records: Iterable<ReadRecord> =
+		input instanceof Uint8Array || input instanceof ArrayBuffer ? readRecords(input) : input;
 	const asyncDecodedStructs: DecodedRecord[] = [];
 
 	const structDecodeQueue = new StructDecodeQueue((structName, queuedRecords) => {
@@ -78,6 +85,8 @@ export function* decodeRecords(records: Iterable<ReadRecord>): Generator<Decoded
 
 	const structRegistry = new StructRegistry(structDecodeQueue);
 
+	let sharedView: DataView | undefined;
+
 	const context = new Map<
 		StartControlRecord['entryId'],
 		Pick<StartControlRecord, 'entryName' | 'entryType' | 'entryMetadata'>
@@ -120,7 +129,14 @@ export function* decodeRecords(records: Iterable<ReadRecord>): Generator<Decoded
 
 		const name = normalizeEntryName(recordContext.entryName);
 		const metadata = recordContext.entryMetadata;
-		const view = new DataView(raw.payload.buffer, raw.payload.byteOffset, raw.payload.byteLength);
+		const payload = raw.payload;
+		let view = sharedView;
+		if (view === undefined || view.buffer !== payload.buffer) {
+			view = new DataView(payload.buffer);
+			sharedView = view;
+		}
+		const payloadOffset = payload.byteOffset;
+		const payloadLength = payload.byteLength;
 
 		const decoded = decodePayload(
 			raw,
@@ -128,6 +144,8 @@ export function* decodeRecords(records: Iterable<ReadRecord>): Generator<Decoded
 			name,
 			metadata,
 			view,
+			payloadOffset,
+			payloadLength,
 			structRegistry,
 			structDecodeQueue,
 		);
@@ -137,8 +155,12 @@ export function* decodeRecords(records: Iterable<ReadRecord>): Generator<Decoded
 		}
 
 		// Yield any structs that became decodable after schema registration
-		yield* asyncDecodedStructs;
-		asyncDecodedStructs.length = 0;
+		if (asyncDecodedStructs.length > 0) {
+			for (const s of asyncDecodedStructs) {
+				yield s;
+			}
+			asyncDecodedStructs.length = 0;
+		}
 	}
 }
 
@@ -148,70 +170,128 @@ function decodePayload(
 	name: string,
 	metadata: string,
 	view: DataView,
+	payloadOffset: number,
+	payloadLength: number,
 	structRegistry: StructRegistry,
 	structDecodeQueue: StructDecodeQueue,
 ): DecodedRecord | undefined {
-	const base = { entryId: raw.entryId, timestamp: raw.timestamp, name, metadata };
+	const entryId = raw.entryId;
+	const timestamp = raw.timestamp;
 
 	switch (entryType) {
 		case 'boolean':
-			return { ...base, type: RecordType.Boolean, payload: byteToBoolean(view.getUint8(0)) };
+			return {
+				entryId,
+				timestamp,
+				name,
+				metadata,
+				type: RecordType.Boolean,
+				payload: byteToBoolean(view.getUint8(payloadOffset)),
+			};
 		case 'int64':
-			return { ...base, type: RecordType.Int64, payload: view.getBigInt64(0, true) };
+			return {
+				entryId,
+				timestamp,
+				name,
+				metadata,
+				type: RecordType.Int64,
+				payload: view.getBigInt64(payloadOffset, true),
+			};
 		case 'float':
-			return { ...base, type: RecordType.Float, payload: view.getFloat32(0, true) };
+			return {
+				entryId,
+				timestamp,
+				name,
+				metadata,
+				type: RecordType.Float,
+				payload: view.getFloat32(payloadOffset, true),
+			};
 		case 'double':
-			return { ...base, type: RecordType.Double, payload: view.getFloat64(0, true) };
+			return {
+				entryId,
+				timestamp,
+				name,
+				metadata,
+				type: RecordType.Double,
+				payload: view.getFloat64(payloadOffset, true),
+			};
 		case 'string':
-			return { ...base, type: RecordType.String, payload: TEXT_DECODER.decode(raw.payload) };
+			return {
+				entryId,
+				timestamp,
+				name,
+				metadata,
+				type: RecordType.String,
+				payload: TEXT_DECODER.decode(raw.payload),
+			};
 		case 'boolean[]': {
-			const payload: boolean[] = [];
-			for (let i = 0; i < raw.payload.byteLength; i++) {
-				payload.push(byteToBoolean(view.getUint8(i)));
+			const payload: boolean[] = new Array(payloadLength);
+			for (let i = 0; i < payloadLength; i++) {
+				payload[i] = byteToBoolean(view.getUint8(payloadOffset + i));
 			}
-			return { ...base, type: RecordType.BooleanArray, payload };
+			return { entryId, timestamp, name, metadata, type: RecordType.BooleanArray, payload };
 		}
 		case 'int64[]': {
-			const payload: bigint[] = [];
-			for (let i = 0; i < raw.payload.byteLength; i += 8) {
-				payload.push(view.getBigUint64(i, true));
+			const count = payloadLength >>> 3;
+			let payload: bigint[];
+			if ((payloadOffset & 7) === 0 && IS_LITTLE_ENDIAN) {
+				payload = Array.from(new BigInt64Array(view.buffer, payloadOffset, count));
+			} else {
+				payload = new Array(count);
+				for (let i = 0; i < count; i++) {
+					payload[i] = view.getBigInt64(payloadOffset + (i << 3), true);
+				}
 			}
-			return { ...base, type: RecordType.Int64Array, payload };
+			return { entryId, timestamp, name, metadata, type: RecordType.Int64Array, payload };
 		}
 		case 'float[]': {
-			const payload: number[] = [];
-			for (let i = 0; i < raw.payload.byteLength; i += 4) {
-				payload.push(view.getFloat32(i, true));
+			const count = payloadLength >>> 2;
+			let payload: number[];
+			if ((payloadOffset & 3) === 0 && IS_LITTLE_ENDIAN) {
+				payload = Array.from(new Float32Array(view.buffer, payloadOffset, count));
+			} else {
+				payload = new Array(count);
+				for (let i = 0; i < count; i++) {
+					payload[i] = view.getFloat32(payloadOffset + (i << 2), true);
+				}
 			}
-			return { ...base, type: RecordType.FloatArray, payload };
+			return { entryId, timestamp, name, metadata, type: RecordType.FloatArray, payload };
 		}
 		case 'double[]': {
-			const payload: number[] = [];
-			for (let i = 0; i < raw.payload.byteLength; i += 8) {
-				payload.push(view.getFloat64(i, true));
+			const count = payloadLength >>> 3;
+			let payload: number[];
+			if ((payloadOffset & 7) === 0 && IS_LITTLE_ENDIAN) {
+				payload = Array.from(new Float64Array(view.buffer, payloadOffset, count));
+			} else {
+				payload = new Array(count);
+				for (let i = 0; i < count; i++) {
+					payload[i] = view.getFloat64(payloadOffset + (i << 3), true);
+				}
 			}
-			return { ...base, type: RecordType.DoubleArray, payload };
+			return { entryId, timestamp, name, metadata, type: RecordType.DoubleArray, payload };
 		}
 		case 'string[]': {
-			const payload: string[] = [];
-			const offset = new ByteOffset();
-			const arrayLength = view.getUint32(offset.get(), true);
-			offset.advance32();
+			let offset = payloadOffset;
+			const arrayLength = view.getUint32(offset, true);
+			offset += 4;
+			const payload: string[] = new Array(arrayLength);
+			const bytes = raw.payload;
+			const bytesStart = bytes.byteOffset;
 			for (let i = 0; i < arrayLength; i++) {
-				const stringLength = view.getUint32(offset.get(), true);
-				offset.advance32();
-				const string = TEXT_DECODER.decode(raw.payload.subarray(offset.get(), offset.get() + stringLength));
-				offset.advance(stringLength);
-				payload.push(string);
+				const stringLength = view.getUint32(offset, true);
+				offset += 4;
+				const relStart = offset - bytesStart;
+				payload[i] = TEXT_DECODER.decode(bytes.subarray(relStart, relStart + stringLength));
+				offset += stringLength;
 			}
-			return { ...base, type: RecordType.StringArray, payload };
+			return { entryId, timestamp, name, metadata, type: RecordType.StringArray, payload };
 		}
 		case 'structschema': {
 			// Schema records: register the struct, but emit as a string record
 			const structName = name.slice('/.schema/'.length + STRUCT_PREFIX.length);
 			const payload = TEXT_DECODER.decode(raw.payload);
 			structRegistry.register(structName, payload);
-			return { ...base, type: RecordType.String, payload };
+			return { entryId, timestamp, name, metadata, type: RecordType.String, payload };
 		}
 		default: {
 			// Try to decode as struct
@@ -226,7 +306,10 @@ function decodePayload(
 					}
 
 					return {
-						...base,
+						entryId,
+						timestamp,
+						name,
+						metadata,
 						type: RecordType.StructArray,
 						structName: normalizedStructName,
 						payload: decoded,
@@ -242,7 +325,10 @@ function decodePayload(
 				}
 
 				return {
-					...base,
+					entryId,
+					timestamp,
+					name,
+					metadata,
 					type: RecordType.Struct,
 					structName: normalizedStructName,
 					payload: decoded,
@@ -250,7 +336,7 @@ function decodePayload(
 			}
 
 			// Unknown type — return raw
-			return { ...base, type: RecordType.Raw, payload: raw.payload };
+			return { entryId, timestamp, name, metadata, type: RecordType.Raw, payload: raw.payload };
 		}
 	}
 }

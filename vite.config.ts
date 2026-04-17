@@ -1,6 +1,13 @@
+import codSpeedPlugin from '@codspeed/vitest-plugin';
 import { defineConfig } from 'vite-plus';
 
 export default defineConfig({
+	plugins: [codSpeedPlugin()],
+	test: {
+		benchmark: {
+			include: ['tests/benchmarks/**/*.bench.ts'],
+		},
+	},
 	staged: {
 		'*': 'vp check --fix',
 	},

@@ -25,6 +25,7 @@
 		"access": "public"
 	},
 	"scripts": {
+		"bench": "vp test bench",
 		"build": "vp pack",
 		"check": "vp check",
 		"dev": "vp pack --watch",
@@ -37,6 +38,7 @@
 		"chevrotain": "^12.0.0"
 	},
 	"devDependencies": {
+		"@codspeed/vitest-plugin": "^5.2.0",
 		"@types/node": "24.12.2",
 		"@typescript/native-preview": "7.0.0-dev.20260416.1",
 		"typescript": "6.0.2",

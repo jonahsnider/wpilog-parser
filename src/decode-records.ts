@@ -32,7 +32,7 @@ function normalizeEntryName(rawName: string): string {
  * Accepts the output of {@link readRecords} and yields fully decoded records,
  * including struct decoding with dependency resolution.
  */
-export async function* decodeRecords(records: AsyncIterable<ReadRecord>): AsyncGenerator<DecodedRecord> {
+export function* decodeRecords(records: Iterable<ReadRecord>): Generator<DecodedRecord> {
 	const asyncDecodedStructs: DecodedRecord[] = [];
 
 	const structDecodeQueue = new StructDecodeQueue((structName, queuedRecords) => {
@@ -83,7 +83,7 @@ export async function* decodeRecords(records: AsyncIterable<ReadRecord>): AsyncG
 		Pick<StartControlRecord, 'entryName' | 'entryType' | 'entryMetadata'>
 	>();
 
-	for await (const readRecord of records) {
+	for (const readRecord of records) {
 		if (readRecord.kind === 'header') {
 			// Header records are informational — consumers can filter for them if needed
 			continue;

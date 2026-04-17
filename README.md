@@ -11,13 +11,12 @@ npm install wpilog-parser
 ## Usage
 
 ```ts
-import { createReadStream } from 'node:fs';
-import { Readable } from 'node:stream';
+import { readFile } from 'node:fs/promises';
 import { readRecords, decodeRecords } from 'wpilog-parser';
 
-const stream = Readable.toWeb(createReadStream('./example.wpilog'));
+const bytes = await readFile('./example.wpilog');
 
-for await (const record of decodeRecords(readRecords(stream))) {
+for (const record of decodeRecords(readRecords(bytes))) {
 	console.log(record);
 }
 ```

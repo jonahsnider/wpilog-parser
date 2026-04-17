@@ -53,13 +53,13 @@ function buildStartControlRecord(entryId: number, name: string, type: string, me
 }
 
 describe('catalogEntries', () => {
-	test('collects start control records', async () => {
+	test('collects start control records', () => {
 		const wpilog = buildWpilog(
 			buildStartControlRecord(1, 'Robot/Pose', 'struct:Pose2d', ''),
 			buildStartControlRecord(2, 'DS:enabled', 'boolean', ''),
 		);
 
-		const catalog = await Array.fromAsync(catalogEntries(readRecords(wpilog)));
+		const catalog = Array.from(catalogEntries(readRecords(wpilog)));
 
 		expect(catalog).toStrictEqual([
 			{ entryId: 1, name: 'Robot/Pose', type: 'struct:Pose2d', metadata: '' },
@@ -67,9 +67,9 @@ describe('catalogEntries', () => {
 		]);
 	});
 
-	test('returns empty array for file with no entries', async () => {
+	test('returns empty array for file with no entries', () => {
 		const wpilog = buildWpilog();
-		const catalog = await Array.fromAsync(catalogEntries(readRecords(wpilog)));
+		const catalog = Array.from(catalogEntries(readRecords(wpilog)));
 		expect(catalog).toStrictEqual([]);
 	});
 });

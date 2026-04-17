@@ -9,33 +9,16 @@ function buildMinimalWpilog(): Uint8Array {
 }
 
 describe('readRecords input types', () => {
-	test('accepts Uint8Array', async () => {
+	test('accepts Uint8Array', () => {
 		const bytes = buildMinimalWpilog();
-		const records = [];
-		for await (const record of readRecords(bytes)) {
-			records.push(record);
-		}
+		const records = Array.from(readRecords(bytes));
 		expect(records).toHaveLength(1);
 		expect(records[0].kind).toBe('header');
 	});
 
-	test('accepts ArrayBuffer', async () => {
+	test('accepts ArrayBuffer', () => {
 		const bytes = buildMinimalWpilog();
-		const records = [];
-		for await (const record of readRecords(bytes.buffer as ArrayBuffer)) {
-			records.push(record);
-		}
-		expect(records).toHaveLength(1);
-		expect(records[0].kind).toBe('header');
-	});
-
-	test('accepts ReadableStream', async () => {
-		const bytes = buildMinimalWpilog();
-		const stream = new Blob([bytes]).stream();
-		const records = [];
-		for await (const record of readRecords(stream)) {
-			records.push(record);
-		}
+		const records = Array.from(readRecords(bytes.buffer as ArrayBuffer));
 		expect(records).toHaveLength(1);
 		expect(records[0].kind).toBe('header');
 	});

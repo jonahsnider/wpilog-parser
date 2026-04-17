@@ -4,10 +4,6 @@ import { ControlRecordType } from '../src/types.js';
 
 const TEXT_ENCODER = new TextEncoder();
 
-function streamFromBytes(bytes: Uint8Array): ReadableStream<Uint8Array> {
-	return new Blob([bytes]).stream();
-}
-
 /** Build a minimal WPILOG file with the given records appended after the header. */
 function buildWpilog(...recordBytes: Uint8Array[]): Uint8Array {
 	const magic = TEXT_ENCODER.encode('WPILOG');
@@ -33,12 +29,8 @@ function buildWpilog(...recordBytes: Uint8Array[]): Uint8Array {
 	return result;
 }
 
-async function collectRecords(stream: ReadableStream<Uint8Array>): Promise<ReadRecord[]> {
-	const results: ReadRecord[] = [];
-	for await (const record of readRecords(stream)) {
-		results.push(record);
-	}
-	return results;
+function collectRecords(bytes: Uint8Array): ReadRecord[] {
+	return Array.from(readRecords(bytes));
 }
 
 /**
@@ -60,7 +52,7 @@ function buildDataRecord(entryId: number, timestamp: number, payload: Uint8Array
 describe('readRecords', () => {
 	describe('header parsing', () => {
 		test('reads header from minimal WPILOG file', async () => {
-			const results = await collectRecords(streamFromBytes(buildWpilog()));
+			const results = collectRecords(buildWpilog());
 
 			expect(results).toHaveLength(1);
 			expect(results[0]).toStrictEqual({
@@ -79,7 +71,7 @@ describe('readRecords', () => {
 				...new Uint8Array(new Uint32Array([extraHeader.byteLength]).buffer), // extra header length (LE)
 				...extraHeader,
 			]);
-			const results = await collectRecords(streamFromBytes(header));
+			const results = collectRecords(header);
 
 			expect(results).toHaveLength(1);
 			expect(results[0]).toStrictEqual({
@@ -88,14 +80,14 @@ describe('readRecords', () => {
 			});
 		});
 
-		test('rejects non-WPILOG files', async () => {
+		test('rejects non-WPILOG files', () => {
 			const file = new Uint8Array([0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b]);
 
-			await expect(async () => {
-				for await (const _ of readRecords(streamFromBytes(file))) {
+			expect(() => {
+				for (const _ of readRecords(file)) {
 					// consume
 				}
-			}).rejects.toThrowError('Not a WPILOG file');
+			}).toThrowError('Not a WPILOG file');
 		});
 	});
 
@@ -103,7 +95,7 @@ describe('readRecords', () => {
 		test('all lengths = 1 (0x00)', async () => {
 			// entryId=1, payloadSize=0, timestamp=0
 			const record = new Uint8Array([0x00, 0x05, 0x00, 0x00]);
-			const results = await collectRecords(streamFromBytes(buildWpilog(record)));
+			const results = collectRecords(buildWpilog(record));
 
 			expect(results).toHaveLength(2); // header + data
 			const dataRecord = results[1];
@@ -117,7 +109,7 @@ describe('readRecords', () => {
 		test('timestampLength=3 (0x20)', async () => {
 			// bitfield 0x20 = 0b00100000 => entryIdLength=1, payloadSizeLength=1, timestampLength=3
 			const record = new Uint8Array([0x20, 0x01, 0x00, 0x80, 0x00, 0x00]);
-			const results = await collectRecords(streamFromBytes(buildWpilog(record)));
+			const results = collectRecords(buildWpilog(record));
 
 			expect(results).toHaveLength(2);
 			const dataRecord = results[1];
@@ -131,7 +123,7 @@ describe('readRecords', () => {
 	describe('entry ID parsing', () => {
 		test('1-byte entry ID', async () => {
 			const record = buildDataRecord(42, 0, new Uint8Array(0));
-			const results = await collectRecords(streamFromBytes(buildWpilog(record)));
+			const results = collectRecords(buildWpilog(record));
 
 			expect(results[1]).toMatchObject({ kind: 'data' });
 			if (results[1].kind === 'data') {
@@ -146,7 +138,7 @@ describe('readRecords', () => {
 			view.setUint16(1, 300, true); // entry ID = 300
 			record[3] = 0x00; // payload size = 0
 			record[4] = 0x00; // timestamp = 0
-			const results = await collectRecords(streamFromBytes(buildWpilog(record)));
+			const results = collectRecords(buildWpilog(record));
 
 			if (results[1].kind === 'data') {
 				expect(results[1].record.entryId).toBe(300);
@@ -161,7 +153,7 @@ describe('readRecords', () => {
 			record[3] = 0x00; // byte2
 			record[4] = 0x00; // payload size = 0
 			record[5] = 0x00; // timestamp = 0
-			const results = await collectRecords(streamFromBytes(buildWpilog(record)));
+			const results = collectRecords(buildWpilog(record));
 
 			if (results[1].kind === 'data') {
 				expect(results[1].record.entryId).toBe(1);
@@ -175,7 +167,7 @@ describe('readRecords', () => {
 			view.setUint32(1, 1, true); // entry ID = 1
 			record[5] = 0x00; // payload size = 0
 			record[6] = 0x00; // timestamp = 0
-			const results = await collectRecords(streamFromBytes(buildWpilog(record)));
+			const results = collectRecords(buildWpilog(record));
 
 			if (results[1].kind === 'data') {
 				expect(results[1].record.entryId).toBe(1);
@@ -219,7 +211,7 @@ describe('readRecords', () => {
 			rView.setUint8(3, 0); // timestamp = 0
 			record.set(payload, 4);
 
-			const results = await collectRecords(streamFromBytes(buildWpilog(record)));
+			const results = collectRecords(buildWpilog(record));
 
 			expect(results).toHaveLength(2);
 			expect(results[1]).toStrictEqual({
@@ -250,7 +242,7 @@ describe('readRecords', () => {
 			record[3] = 0;
 			record.set(payload, 4);
 
-			const results = await collectRecords(streamFromBytes(buildWpilog(record)));
+			const results = collectRecords(buildWpilog(record));
 
 			expect(results).toHaveLength(2);
 			expect(results[1]).toStrictEqual({
@@ -285,7 +277,7 @@ describe('readRecords', () => {
 			record[3] = 0;
 			record.set(payload, 4);
 
-			const results = await collectRecords(streamFromBytes(buildWpilog(record)));
+			const results = collectRecords(buildWpilog(record));
 
 			expect(results).toHaveLength(2);
 			expect(results[1]).toStrictEqual({
@@ -305,7 +297,7 @@ describe('readRecords', () => {
 		test('reads data record payload', async () => {
 			const payload = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
 			const record = buildDataRecord(5, 100, payload);
-			const results = await collectRecords(streamFromBytes(buildWpilog(record)));
+			const results = collectRecords(buildWpilog(record));
 
 			expect(results).toHaveLength(2);
 			const data = results[1];
@@ -320,7 +312,7 @@ describe('readRecords', () => {
 		test('reads multiple records', async () => {
 			const record1 = buildDataRecord(1, 10, new Uint8Array([0x01]));
 			const record2 = buildDataRecord(2, 20, new Uint8Array([0x02]));
-			const results = await collectRecords(streamFromBytes(buildWpilog(record1, record2)));
+			const results = collectRecords(buildWpilog(record1, record2));
 
 			expect(results).toHaveLength(3); // header + 2 data
 			if (results[1].kind === 'data' && results[2].kind === 'data') {

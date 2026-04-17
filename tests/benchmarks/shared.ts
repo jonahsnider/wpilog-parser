@@ -15,13 +15,6 @@ export type Fixture = {
 	bytes: Uint8Array;
 };
 
-export const BENCH_OPTIONS = {
-	iterations: 5,
-	warmupIterations: 1,
-	time: 0,
-	warmupTime: 0,
-} as const;
-
 async function loadFixture(name: FixtureName): Promise<Fixture> {
 	const filePath = path.join(FIXTURES_DIR, `${name}.wpilog`);
 	const buffer = await readFile(filePath);

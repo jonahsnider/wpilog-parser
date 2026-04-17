@@ -16,10 +16,10 @@ export type CatalogEntry = {
  * Data record bytes are still read from the stream but not decoded,
  * making this much cheaper than full decoding via {@link decodeRecords}.
  */
-export async function* catalogEntries(records: AsyncIterable<ReadRecord>): AsyncGenerator<CatalogEntry> {
+export function* catalogEntries(records: Iterable<ReadRecord>): Generator<CatalogEntry> {
 	const entries = new Map<number, CatalogEntry>();
 
-	for await (const record of records) {
+	for (const record of records) {
 		if (record.kind !== 'control') {
 			continue;
 		}

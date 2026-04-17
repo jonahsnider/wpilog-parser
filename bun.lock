@@ -16,6 +16,9 @@
       },
     },
   },
+  "patchedDependencies": {
+    "@codspeed/vitest-plugin@5.2.0": "patches/@codspeed%2Fvitest-plugin@5.2.0.patch",
+  },
   "overrides": {
     "vite": "npm:@voidzero-dev/vite-plus-core@latest",
     "vitest": "npm:@voidzero-dev/vite-plus-test@latest",

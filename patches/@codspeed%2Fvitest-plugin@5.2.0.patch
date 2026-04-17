@@ -1,0 +1,18 @@
+diff --git a/dist/index.mjs b/dist/index.mjs
+index 0d0d9f139adf72757945ce13c497086e14e51fd0..34fcdff568dca5d8a0fe5b280fbafbec08d3f39a 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -14,6 +14,13 @@ function getVitestMajorVersion() {
+     const require = createRequire(join(process.cwd(), "package.json"));
+     const vitestPkgPath = require.resolve("vitest/package.json");
+     const vitestPkg = JSON.parse(readFileSync(vitestPkgPath, "utf-8"));
++    // Vite+ replaces the `vitest` package with `@voidzero-dev/vite-plus-test`, which reports its own
++    // version (currently 0.1.x) even though it ships Vitest v4 internally. Treat that as v4 so the
++    // plugin applies the correct Vitest v4 config shape (top-level `execArgv` instead of
++    // `poolOptions.forks.execArgv`).
++    if (vitestPkg.name === "@voidzero-dev/vite-plus-test") {
++      return 4;
++    }
+     return parseInt(vitestPkg.version.split(".")[0], 10);
+   } catch {
+     return null;

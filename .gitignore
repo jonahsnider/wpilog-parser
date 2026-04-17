@@ -219,3 +219,7 @@ $RECYCLE.BIN/
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Keep benchmark fixture logs tracked even though `logs` is ignored above
+!tests/fixtures/logs/
+!tests/fixtures/logs/**

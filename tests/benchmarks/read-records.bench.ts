@@ -4,10 +4,10 @@ import { bench, describe } from 'vite-plus/test';
 import { readRecords } from '../../src/read-records.js';
 import { BENCH_OPTIONS, FIXTURES } from './shared.js';
 
-describe('readRecords - in-memory (Uint8Array)', () => {
-	for (const fixture of FIXTURES) {
+for (const fixture of FIXTURES) {
+	describe(`readRecords - ${fixture.name}`, () => {
 		bench(
-			fixture.name,
+			'in-memory (Uint8Array)',
 			async () => {
 				for await (const _record of readRecords(fixture.bytes)) {
 					// discard
@@ -15,13 +15,9 @@ describe('readRecords - in-memory (Uint8Array)', () => {
 			},
 			BENCH_OPTIONS,
 		);
-	}
-});
 
-describe('readRecords - streamed (fs ReadableStream)', () => {
-	for (const fixture of FIXTURES) {
 		bench(
-			fixture.name,
+			'streamed (fs ReadableStream)',
 			async () => {
 				for await (const _record of readRecords(Readable.toWeb(createReadStream(fixture.filePath)))) {
 					// discard
@@ -29,5 +25,5 @@ describe('readRecords - streamed (fs ReadableStream)', () => {
 			},
 			BENCH_OPTIONS,
 		);
-	}
-});
+	});
+}

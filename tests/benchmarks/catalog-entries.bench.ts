@@ -5,10 +5,10 @@ import { catalogEntries } from '../../src/catalog.js';
 import { readRecords } from '../../src/read-records.js';
 import { BENCH_OPTIONS, FIXTURES } from './shared.js';
 
-describe('catalogEntries - in-memory (Uint8Array)', () => {
-	for (const fixture of FIXTURES) {
+for (const fixture of FIXTURES) {
+	describe(`catalogEntries - ${fixture.name}`, () => {
 		bench(
-			fixture.name,
+			'in-memory (Uint8Array)',
 			async () => {
 				for await (const _entry of catalogEntries(readRecords(fixture.bytes))) {
 					// discard
@@ -16,13 +16,9 @@ describe('catalogEntries - in-memory (Uint8Array)', () => {
 			},
 			BENCH_OPTIONS,
 		);
-	}
-});
 
-describe('catalogEntries - streamed (fs ReadableStream)', () => {
-	for (const fixture of FIXTURES) {
 		bench(
-			fixture.name,
+			'streamed (fs ReadableStream)',
 			async () => {
 				for await (const _entry of catalogEntries(readRecords(Readable.toWeb(createReadStream(fixture.filePath))))) {
 					// discard
@@ -30,5 +26,5 @@ describe('catalogEntries - streamed (fs ReadableStream)', () => {
 			},
 			BENCH_OPTIONS,
 		);
-	}
-});
+	});
+}

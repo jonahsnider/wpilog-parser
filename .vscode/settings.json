@@ -20,6 +20,12 @@
 	"[typescriptreact]": {
 		"editor.defaultFormatter": "oxc.oxc-vscode"
 	},
+	"[yaml]": {
+		"editor.defaultFormatter": "oxc.oxc-vscode"
+	},
+	"[github-actions-workflow]": {
+		"editor.defaultFormatter": "oxc.oxc-vscode"
+	},
 	"editor.codeActionsOnSave": {
 		"source.fixAll.oxc": "explicit"
 	},

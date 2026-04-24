@@ -1,3 +1,4 @@
+import { normalizeEntryName } from './decode-records.js';
 import type { ReadRecord } from './read-records.js';
 import { ControlRecordType } from './types.js';
 
@@ -27,7 +28,7 @@ export function* catalogEntries(records: Iterable<ReadRecord>): Generator<Catalo
 		if (record.payload.controlRecordType === ControlRecordType.Start) {
 			const entry = {
 				entryId: record.payload.entryId,
-				name: record.payload.entryName,
+				name: normalizeEntryName(record.payload.entryName),
 				type: record.payload.entryType,
 				metadata: record.payload.entryMetadata,
 			};

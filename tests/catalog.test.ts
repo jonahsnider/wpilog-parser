@@ -62,8 +62,8 @@ describe('catalogEntries', () => {
 		const catalog = Array.from(catalogEntries(readRecords(wpilog)));
 
 		expect(catalog).toStrictEqual([
-			{ entryId: 1, name: 'Robot/Pose', type: 'struct:Pose2d', metadata: '' },
-			{ entryId: 2, name: 'DS:enabled', type: 'boolean', metadata: '' },
+			{ entryId: 1, name: '/Robot/Pose', type: 'struct:Pose2d', metadata: '' },
+			{ entryId: 2, name: '/DS:enabled', type: 'boolean', metadata: '' },
 		]);
 	});
 

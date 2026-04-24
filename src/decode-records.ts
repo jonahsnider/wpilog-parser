@@ -19,7 +19,7 @@ function byteToBoolean(byte: number): boolean {
 	}
 }
 
-function normalizeEntryName(rawName: string): string {
+export function normalizeEntryName(rawName: string): string {
 	if (rawName.startsWith('/')) {
 		return rawName;
 	}

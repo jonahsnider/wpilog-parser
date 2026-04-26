@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/jonahsnider/wpilog-parser/compare/v2.1.0...v2.2.0) (2026-04-26)
+
+
+### Features
+
+* rename skill to analyze-wpilog ([5d399e6](https://github.com/jonahsnider/wpilog-parser/commit/5d399e602d1ec5e45fd1b6244dde1ea9afe490ab))
+
 ## [2.1.0](https://github.com/jonahsnider/wpilog-parser/compare/v2.0.0...v2.1.0) (2026-04-25)
 
 

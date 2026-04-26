@@ -27,7 +27,7 @@ This package ships an [Agent Skill](https://agentskills.io) at `skills/wpilog-pa
 
 ```bash
 # https://skills.sh/
-npx skills add wpilog-parser
+npx skills add jonahsnider/wpilog-parser
 ```
 
 ```bash

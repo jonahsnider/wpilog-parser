@@ -43,7 +43,7 @@
 		"@types/node": "24.12.4",
 		"@typescript/native-preview": "7.0.0-dev.20260601.1",
 		"typescript": "6.0.3",
-		"vite-plus": "0.1.23"
+		"vite-plus": "0.1.24"
 	},
 	"overrides": {
 		"vite": "npm:@voidzero-dev/vite-plus-core@latest",

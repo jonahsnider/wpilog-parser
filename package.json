@@ -41,7 +41,7 @@
 	"devDependencies": {
 		"@codspeed/vitest-plugin": "^5.2.0",
 		"@types/node": "24.12.4",
-		"@typescript/native-preview": "7.0.0-dev.20260603.1",
+		"@typescript/native-preview": "7.0.0-dev.20260604.1",
 		"typescript": "6.0.3",
 		"vite-plus": "0.1.24"
 	},

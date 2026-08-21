@@ -13,6 +13,9 @@
 		"type": "git",
 		"url": "git+https://github.com/jonahsnider/wpilog-parser.git"
 	},
+	"bin": {
+		"wpilog": "./dist/cli.mjs"
+	},
 	"files": [
 		"dist",
 		"skills"
@@ -33,9 +36,12 @@
 		"generate": "bun run ./src/struct/codegen.ts",
 		"prepare": "vp config",
 		"prepublishOnly": "vp run build",
+		"start": "bun run ./src/cli.ts",
 		"test": "vp test"
 	},
 	"dependencies": {
+		"@toon-format/toon": "^4.1.1",
+		"cac": "^7.0.0",
 		"chevrotain": "^13.0.0"
 	},
 	"devDependencies": {

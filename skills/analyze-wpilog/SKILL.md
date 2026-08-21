@@ -12,24 +12,13 @@ WPILOG is the binary log format used by logging libraries in the FRC ecosystem. 
 
 1. Init a project using `bun init` or similar
 2. Add `wpilog-parser` as a dependency
-3. Create a `.ts` file for catalogging the records in the WPILOG file
+3. Catalog the entries in the WPILOG file before deciding what to analyze
 
-   ```ts
-   import { readFile } from 'node:fs/promises';
-   import { readRecords, catalogEntries } from 'wpilog-parser';
-
-   const bytes = await readFile('./example.wpilog');
-
-   for (const catalogEntry of catalogEntries(readRecords(bytes))) {
-   	console.log(catalogEntry);
-   	// {
-   	//   entryId: 3,
-   	//   name: "/Robot/DogLog/Options",
-   	//   type: "string",
-   	//   metadata: "{\"source\":\"DogLog\"}",
-   	// }
-   }
+   ```sh
+   bun wpilog catalog ./example.wpilog
    ```
+
+   The default output is plaintext. Use `--json`, `--jsonl`/`--ndjson`, or `--csv` when another format is more useful.
 
 ## Analyzing logs
 

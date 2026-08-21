@@ -4,7 +4,7 @@ Read [WPILib data log (`.wpilog`)](https://docs.wpilib.org/en/stable/docs/softwa
 
 ## Install
 
-```bash
+```sh
 npm install wpilog-parser
 ```
 
@@ -25,19 +25,19 @@ for (const record of decodeRecords(readRecords(bytes))) {
 
 This package ships an [Agent Skill](https://agentskills.io) at `skills/analyze-wpilog/SKILL.md` that teaches AI coding agents how to use the library. Install it into your project with either:
 
-```bash
+```sh
 # https://skills.sh/
 npx skills add jonahsnider/wpilog-parser
 ```
 
-```bash
+```sh
 # https://github.com/antfu/skills-npm
 npx skills-npm
 ```
 
 ## Development
 
-```bash
+```sh
 vp install
 vp test
 vp pack

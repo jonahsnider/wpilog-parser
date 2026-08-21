@@ -26,6 +26,10 @@ export default defineConfig({
 			typeAware: true,
 			typeCheck: true,
 		},
+		categories: {
+			correctness: 'error',
+			perf: 'error',
+		},
 	},
 	fmt: {
 		singleQuote: true,

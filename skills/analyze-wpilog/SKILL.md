@@ -10,12 +10,12 @@ WPILOG is the binary log format used by logging libraries in the FRC ecosystem. 
 
 ## Creating a project
 
-1. Init a project using `bun init` or similar
+1. Init a project using `pnpm init` or similar
 2. Add `wpilog-parser` as a dependency
 3. Catalog the entries in the WPILOG file before deciding what to analyze
 
    ```sh
-   bun wpilog catalog ./example.wpilog
+   pnpm wpilog catalog ./example.wpilog
    ```
 
    The default output is plaintext. Use `--json`, `--jsonl`/`--ndjson`, or `--csv` when another format is more useful.

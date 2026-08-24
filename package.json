@@ -33,10 +33,10 @@
 		"build": "vp pack",
 		"check": "vp check",
 		"dev": "vp pack --watch",
-		"generate": "bun run ./src/struct/codegen.ts",
+		"generate": "node ./src/struct/codegen.ts",
 		"prepare": "vp config",
 		"prepublishOnly": "vp run build",
-		"start": "bun run ./src/cli.ts",
+		"start": "node ./src/cli.ts",
 		"test": "vp test"
 	},
 	"dependencies": {
@@ -51,12 +51,5 @@
 		"typescript": "7.0.2",
 		"vite-plus": "0.1.24"
 	},
-	"overrides": {
-		"vite": "npm:@voidzero-dev/vite-plus-core@latest",
-		"vitest": "npm:@voidzero-dev/vite-plus-test@latest"
-	},
-	"packageManager": "bun@1.4.0",
-	"patchedDependencies": {
-		"@codspeed/vitest-plugin@5.2.0": "patches/@codspeed%2Fvitest-plugin@5.2.0.patch"
-	}
+	"packageManager": "pnpm@12.0.0-rc.8"
 }

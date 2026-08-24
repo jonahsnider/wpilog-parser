@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.0](https://github.com/jonahsnider/wpilog-parser/compare/v2.2.0...v2.3.0) (2026-08-24)
+
+
+### Features
+
+* add wpilog CLI ([#26](https://github.com/jonahsnider/wpilog-parser/issues/26)) ([fdc6caa](https://github.com/jonahsnider/wpilog-parser/commit/fdc6caa04586a074ee0b0b1a7451e07a6e1b6893))
+
 ## [2.2.0](https://github.com/jonahsnider/wpilog-parser/compare/v2.1.0...v2.2.0) (2026-04-26)
 
 

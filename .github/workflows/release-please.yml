@@ -24,20 +24,16 @@ jobs:
       - name: Checkout Git repository
         if: ${{ steps.release.outputs.release_created }}
         uses: actions/checkout@v7
+      - name: Setup Bun
+        if: ${{ steps.release.outputs.release_created }}
+        uses: oven-sh/setup-bun@v2
       - name: Setup Vite+
         uses: voidzero-dev/setup-vp@v1
         with:
           node-version: 'lts'
           cache: true
-          run-install: false
           registry-url: 'https://registry.npmjs.org'
         if: ${{ steps.release.outputs.release_created }}
-      - name: Setup Bun
-        if: ${{ steps.release.outputs.release_created }}
-        uses: oven-sh/setup-bun@v2
-      - name: Install dependencies
-        if: ${{ steps.release.outputs.release_created }}
-        run: bun install --frozen-lockfile
       - name: Lint, test, and build
         run: vp check && vp test && vp pack
         if: ${{ steps.release.outputs.release_created }}

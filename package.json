@@ -49,7 +49,7 @@
 		"@types/node": "26.2.0",
 		"@typescript/native-preview": "7.0.0-dev.20260707.2",
 		"typescript": "7.0.2",
-		"vite-plus": "0.1.24"
+		"vite-plus": "0.2.9"
 	},
 	"overrides": {
 		"vite": "npm:@voidzero-dev/vite-plus-core@latest",

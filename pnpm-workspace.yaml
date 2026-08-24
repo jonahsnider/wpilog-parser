@@ -13,9 +13,5 @@ minimumReleaseAgeExclude:
   - '@voidzero-dev/vite-plus-win32-x64-msvc@0.3.0'
   - vite-plus@0.3.0
 
-overrides:
-  vite: npm:@voidzero-dev/vite-plus-core@latest
-  vitest: npm:@voidzero-dev/vite-plus-test@latest
-
 patchedDependencies:
   '@codspeed/vitest-plugin@5.2.0': patches/@codspeed%2Fvitest-plugin@5.2.0.patch

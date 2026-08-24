@@ -1,8 +1,8 @@
 {
 	"mcpServers": {
 		"vite-plus": {
-			"command": "bun",
-			"args": ["vp", "mcp"]
+			"command": "vp",
+			"args": ["mcp"]
 		}
 	}
 }

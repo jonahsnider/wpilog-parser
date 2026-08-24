@@ -2,8 +2,8 @@
 	"mcpServers": {
 		"vite-plus": {
 			"type": "stdio",
-			"command": "bun",
-			"args": ["vp", "mcp"],
+			"command": "vp",
+			"args": ["mcp"],
 			"env": {}
 		}
 	}

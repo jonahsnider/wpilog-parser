@@ -52,10 +52,11 @@ export function* decodeRecords(
 	options: DecodeRecordsOptions = { strict: false },
 ): Generator<DecodedRecord> {
 	const asyncDecodedStructs: DecodedRecord[] = [];
+	const recordContexts = new WeakMap<RawRecord, EntryContext>();
 
 	const structDecodeQueue = new StructDecodeQueue((structName, queuedRecords) => {
 		for (const raw of queuedRecords) {
-			const ctx = context.get(raw.entryId);
+			const ctx = recordContexts.get(raw);
 			if (!ctx) continue;
 
 			const entryType = ctx.entryType;
@@ -167,6 +168,8 @@ export function* decodeRecords(
 
 		if (decoded) {
 			yield decoded;
+		} else {
+			recordContexts.set(raw, recordContext);
 		}
 
 		// Yield any structs that became decodable after schema registration

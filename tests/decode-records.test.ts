@@ -30,6 +30,15 @@ function startControl(
 	};
 }
 
+function finishControl(entryId: number): ReadRecord {
+	return {
+		kind: 'control',
+		entryId: 0,
+		timestamp: 0n,
+		payload: { controlRecordType: ControlRecordType.Finish, entryId },
+	};
+}
+
 function setMetadataControl(entryId: number, entryMetadata: string): ReadRecord {
 	return {
 		kind: 'control',
@@ -71,6 +80,32 @@ describe('decodeRecords', () => {
 				metadata: 'updated',
 				type: RecordType.Boolean,
 				payload: false,
+			},
+		]);
+	});
+
+	test('retains the original entry context while waiting for a struct schema', () => {
+		const records = [
+			headerRecord(),
+			startControl(1, 'struct:Old', 'old-entry', 'old-metadata'),
+			dataRecord(1, new Uint8Array([42])),
+			finishControl(1),
+			startControl(1, 'struct:New', 'new-entry', 'new-metadata'),
+			startControl(2, 'structschema', '.schema/struct:Old'),
+			dataRecord(2, new TextEncoder().encode('uint8 value')),
+		];
+
+		const structResults = Array.from(decodeRecords(records)).filter((record) => record.type === RecordType.Struct);
+
+		expect(structResults).toStrictEqual([
+			{
+				entryId: 1,
+				timestamp: 0n,
+				name: '/old-entry',
+				metadata: 'old-metadata',
+				type: RecordType.Struct,
+				structName: 'Old',
+				payload: new Map([['value', 42]]),
 			},
 		]);
 	});

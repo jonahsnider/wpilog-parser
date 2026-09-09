@@ -22,15 +22,15 @@ WPILOG is the binary log format used by logging libraries in the FRC ecosystem. 
 
 ## Analyzing logs
 
-Use `decodeRecords` to parse record contents. Filter by `name` and narrow on `type`:
+Use `parseDataLog` to parse DataLog bytes. Filter by `name` and narrow on `type`:
 
 ```ts
 import { readFile } from 'node:fs/promises';
-import { readRecords, decodeRecords, isDataRecord, RecordType } from 'wpilog-parser';
+import { isDataRecord, parseDataLog, RecordType } from 'wpilog-parser';
 
 const bytes = await readFile('./example.wpilog');
 
-for (const record of decodeRecords(readRecords(bytes))) {
+for (const record of parseDataLog(bytes)) {
 	if (!isDataRecord(record)) continue;
 
 	if (record.name === '/Robot/Intake/Voltage' && record.type === RecordType.Double) {
@@ -42,9 +42,9 @@ for (const record of decodeRecords(readRecords(bytes))) {
 ### Decoding structs
 
 ```ts
-import { structPayloadToJson, RecordType } from 'wpilog-parser';
+import { parseDataLog, RecordType, structPayloadToJson } from 'wpilog-parser';
 
-for (const record of decodeRecords(readRecords(bytes))) {
+for (const record of parseDataLog(bytes)) {
 	if (record.type === RecordType.Struct && record.name === '/Robot/Localization/EstimatedPose') {
 		console.log(record.timestamp, structPayloadToJson(record.payload));
 		// 18688018n {
@@ -58,7 +58,7 @@ for (const record of decodeRecords(readRecords(bytes))) {
 ### Strict mode
 
 ```ts
-for (const record of decodeRecords(readRecords(bytes), { strict: true })) {
+for (const record of parseDataLog(bytes, { strict: true })) {
 	// throws on orphan data records instead of skipping
 }
 ```
@@ -79,7 +79,7 @@ The mode flags (`autonomous`, `test`) reflect what the DS _would_ run if enabled
 ### Tracking enable/mode durations
 
 ```ts
-import { readRecords, decodeRecords, isDataRecord, RecordType } from 'wpilog-parser';
+import { isDataRecord, parseDataLog, RecordType } from 'wpilog-parser';
 
 type Mode = 'auto' | 'teleop' | 'test';
 function modeOf(auto: boolean, test: boolean): Mode {
@@ -94,7 +94,7 @@ let test = false;
 let enabledSince: bigint | null = null;
 const totals = { auto: 0n, teleop: 0n, test: 0n };
 
-for (const r of decodeRecords(readRecords(bytes))) {
+for (const r of parseDataLog(bytes)) {
 	if (!isDataRecord(r) || r.type !== RecordType.Boolean) continue;
 
 	const wasEnabled = enabled;

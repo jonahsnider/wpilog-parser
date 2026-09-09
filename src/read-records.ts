@@ -5,7 +5,15 @@ const TEXT_ENCODER = new TextEncoder();
 const TEXT_DECODER = new TextDecoder();
 const MAGIC = TEXT_ENCODER.encode('WPILOG');
 
-function readControlRecordPayload(payload: Uint8Array): ControlRecordPayload {
+function readString(payload: Uint8Array, view: DataView, offset: ByteOffset): string {
+	const length = view.getUint32(offset.get(), true);
+	offset.advance32();
+	const value = TEXT_DECODER.decode(payload.subarray(offset.get(), offset.get() + length));
+	offset.advance(length);
+	return value;
+}
+
+export function readControlRecordPayload(payload: Uint8Array): ControlRecordPayload {
 	const offset = new ByteOffset();
 	const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
 
@@ -16,18 +24,9 @@ function readControlRecordPayload(payload: Uint8Array): ControlRecordPayload {
 		case ControlRecordType.Start: {
 			const entryId = view.getUint32(offset.get(), true);
 			offset.advance32();
-			const entryNameLength = view.getUint32(offset.get(), true);
-			offset.advance32();
-			const entryName = TEXT_DECODER.decode(payload.subarray(offset.get(), offset.get() + entryNameLength));
-			offset.advance(entryNameLength);
-			const entryTypeLength = view.getUint32(offset.get(), true);
-			offset.advance32();
-			const entryType = TEXT_DECODER.decode(payload.subarray(offset.get(), offset.get() + entryTypeLength));
-			offset.advance(entryTypeLength);
-			const entryMetadataLength = view.getUint32(offset.get(), true);
-			offset.advance32();
-			const entryMetadata = TEXT_DECODER.decode(payload.subarray(offset.get(), offset.get() + entryMetadataLength));
-			offset.advance(entryMetadataLength);
+			const entryName = readString(payload, view, offset);
+			const entryType = readString(payload, view, offset);
+			const entryMetadata = readString(payload, view, offset);
 
 			return {
 				controlRecordType: type,
@@ -45,10 +44,7 @@ function readControlRecordPayload(payload: Uint8Array): ControlRecordPayload {
 		case ControlRecordType.SetMetadata: {
 			const entryId = view.getUint32(offset.get(), true);
 			offset.advance32();
-			const entryMetadataLength = view.getUint32(offset.get(), true);
-			offset.advance32();
-			const entryMetadata = TEXT_DECODER.decode(payload.subarray(offset.get(), offset.get() + entryMetadataLength));
-			offset.advance(entryMetadataLength);
+			const entryMetadata = readString(payload, view, offset);
 			return { controlRecordType: type, entryId, entryMetadata };
 		}
 		default:
@@ -67,7 +63,7 @@ export type ReadRecord =
 	  }
 	| { kind: 'data'; record: RawRecord };
 
-/** Accepted input types for {@link readRecords}. */
+/** Accepted input types for {@link readRecords} and `parseDataLog`. */
 export type DataLogInput = Uint8Array | ArrayBuffer;
 
 function toUint8Array(input: DataLogInput): Uint8Array {
@@ -75,6 +71,41 @@ function toUint8Array(input: DataLogInput): Uint8Array {
 		return input;
 	}
 	return new Uint8Array(input);
+}
+
+function openDataLog(input: DataLogInput): {
+	bytes: Uint8Array;
+	view: DataView;
+	header: DataLogHeader;
+	recordsOffset: number;
+} {
+	const bytes = toUint8Array(input);
+	const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+
+	if (bytes.byteLength < 12) {
+		throw new RangeError('Not a WPILOG file (truncated header)');
+	}
+	for (let i = 0; i < MAGIC.byteLength; i++) {
+		if (bytes[i] !== MAGIC[i]) {
+			throw new RangeError('Not a WPILOG file (invalid magic bytes)');
+		}
+	}
+
+	const extraHeaderLength = view.getUint32(8, true);
+	const recordsOffset = 12 + extraHeaderLength;
+	if (recordsOffset > bytes.byteLength) {
+		throw new RangeError('Not a WPILOG file (truncated extra header)');
+	}
+
+	return {
+		bytes,
+		view,
+		header: {
+			version: { major: view.getUint8(7), minor: view.getUint8(6) },
+			extraHeader: TEXT_DECODER.decode(bytes.subarray(12, recordsOffset)),
+		},
+		recordsOffset,
+	};
 }
 
 function readVarInt(view: DataView, offset: number, length: number): number {
@@ -140,56 +171,89 @@ function readTimestamp(view: DataView, offset: number, length: number): bigint {
 	}
 }
 
-/**
- * Read raw WPILOG records from an in-memory buffer.
- *
- * Yields a header record first, then control and data records in order.
- * Data record payloads are not decoded — use {@link decodeRecords} for that.
- */
-export function* readRecords(input: DataLogInput): Generator<ReadRecord> {
-	const bytes = toUint8Array(input);
-	const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-	const total = bytes.byteLength;
+/** Mutable record cursor used by the fused decoder to avoid intermediate record allocations. */
+export class RecordCursor {
+	readonly bytes: Uint8Array;
+	readonly view: DataView;
+	readonly header: DataLogHeader;
+	entryId = 0;
+	timestamp = 0n;
+	payloadOffset = 0;
+	payloadSize = 0;
+	private offset: number;
 
-	// Header: 6-byte magic, 1-byte minor, 1-byte major, 4-byte extra header length, extra header.
-	if (total < 12) {
-		throw new Error('Not a WPILOG file (truncated header)');
+	constructor(input: DataLogInput) {
+		const source = openDataLog(input);
+		this.bytes = source.bytes;
+		this.view = source.view;
+		this.header = source.header;
+		this.offset = source.recordsOffset;
 	}
 
-	for (let i = 0; i < MAGIC.byteLength; i++) {
-		if (bytes[i] !== MAGIC[i]) {
-			throw new Error('Not a WPILOG file (invalid magic bytes)');
+	next(): boolean {
+		const total = this.bytes.byteLength;
+		let offset = this.offset;
+		if (offset >= total) {
+			return false;
 		}
-	}
 
-	const versionMinor = view.getUint8(6);
-	const versionMajor = view.getUint8(7);
-	const extraHeaderLength = view.getUint32(8, true);
-	let offset = 12;
-
-	if (offset + extraHeaderLength > total) {
-		throw new Error('Not a WPILOG file (truncated extra header)');
-	}
-
-	const extraHeader = TEXT_DECODER.decode(bytes.subarray(offset, offset + extraHeaderLength));
-	offset += extraHeaderLength;
-
-	yield {
-		kind: 'header',
-		header: { version: { major: versionMajor, minor: versionMinor }, extraHeader },
-	};
-
-	while (offset < total) {
-		const bitfield = view.getUint8(offset);
-		offset += 1;
-
+		const view = this.view;
+		const bitfield = view.getUint8(offset++);
 		const entryIdLength = 1 + (bitfield & 0b11);
 		const payloadSizeLength = 1 + ((bitfield >> 2) & 0b11);
 		const timestampLength = 1 + ((bitfield >> 4) & 0b111);
 
 		if (offset + entryIdLength + payloadSizeLength + timestampLength > total) {
-			// Truncated record header; treat as end-of-stream to match the
-			// previous behavior of silently terminating on EOF.
+			this.offset = total;
+			return false;
+		}
+
+		const entryId = readVarInt(view, offset, entryIdLength);
+		offset += entryIdLength;
+		const payloadSize = readVarInt(view, offset, payloadSizeLength);
+		offset += payloadSizeLength;
+		const timestamp = readTimestamp(view, offset, timestampLength);
+		offset += timestampLength;
+
+		if (offset + payloadSize > total) {
+			this.offset = total;
+			return false;
+		}
+
+		this.entryId = entryId;
+		this.timestamp = timestamp;
+		this.payloadOffset = offset;
+		this.payloadSize = payloadSize;
+		this.offset = offset + payloadSize;
+		return true;
+	}
+
+	getPayload(): Uint8Array {
+		return this.bytes.subarray(this.payloadOffset, this.payloadOffset + this.payloadSize);
+	}
+}
+
+/**
+ * Read raw WPILOG records from an in-memory buffer.
+ *
+ * Yields a header record first, then control and data records in order.
+ * Data record payloads are not decoded. Prefer `parseDataLog` when raw records
+ * or an intermediate transformation are not needed.
+ */
+export function* readRecords(input: DataLogInput): Generator<ReadRecord> {
+	const { bytes, view, header, recordsOffset } = openDataLog(input);
+	const total = bytes.byteLength;
+	let offset = recordsOffset;
+
+	yield { kind: 'header', header };
+
+	while (offset < total) {
+		const bitfield = view.getUint8(offset++);
+		const entryIdLength = 1 + (bitfield & 0b11);
+		const payloadSizeLength = 1 + ((bitfield >> 2) & 0b11);
+		const timestampLength = 1 + ((bitfield >> 4) & 0b111);
+
+		if (offset + entryIdLength + payloadSizeLength + timestampLength > total) {
 			return;
 		}
 
@@ -208,8 +272,7 @@ export function* readRecords(input: DataLogInput): Generator<ReadRecord> {
 		offset += payloadSize;
 
 		if (entryId === 0) {
-			const controlPayload = readControlRecordPayload(payload);
-			yield { kind: 'control', entryId, timestamp, payload: controlPayload };
+			yield { kind: 'control', entryId, timestamp, payload: readControlRecordPayload(payload) };
 		} else {
 			yield { kind: 'data', record: { entryId, timestamp, payload } };
 		}

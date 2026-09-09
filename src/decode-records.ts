@@ -1,14 +1,26 @@
-import { ByteOffset } from './byte-offset.js';
-import type { ReadRecord } from './read-records.js';
+import { type DataLogInput, type ReadRecord, RecordCursor, readControlRecordPayload } from './read-records.js';
 import { StructDecodeQueue } from './struct/struct-decode-queue.js';
 import { StructRegistry } from './struct/struct-registry.js';
-import { ControlRecordType, type DecodedRecord, type RawRecord, RecordType, type StartControlRecord } from './types.js';
+import { ByteOffset } from './byte-offset.js';
+import {
+	type ControlRecordPayload,
+	ControlRecordType,
+	type DecodedRecord,
+	type RawRecord,
+	RecordType,
+	type StartControlRecord,
+} from './types.js';
 
 const TEXT_DECODER = new TextDecoder();
 const STRUCT_PREFIX = 'struct:';
 const STRUCT_ARRAY_SUFFIX = '[]';
+const STRUCT_SCHEMA_NAME_PREFIX = '/.schema/' + STRUCT_PREFIX;
 
-type EntryContext = Pick<StartControlRecord, 'entryName' | 'entryType' | 'entryMetadata'>;
+type EntryContext = {
+	name: string;
+	entryType: StartControlRecord['entryType'];
+	metadata: string;
+};
 
 function byteToBoolean(byte: number): boolean {
 	switch (byte) {
@@ -28,7 +40,7 @@ export function normalizeEntryName(rawName: string): string {
 	return `/${rawName}`;
 }
 
-/** Options for {@link decodeRecords}. */
+/** Options for {@link decodeRecords} and {@link parseDataLog}. */
 export type DecodeRecordsOptions = {
 	/**
 	 * When `true`, throw if a data record references an entry ID with no preceding
@@ -37,6 +49,119 @@ export type DecodeRecordsOptions = {
 	 */
 	strict?: boolean;
 };
+
+class RecordDecoder {
+	readonly delayedRecords: DecodedRecord[] = [];
+	private readonly context = new Map<StartControlRecord['entryId'], EntryContext>();
+	private readonly recordContexts = new WeakMap<RawRecord, EntryContext>();
+	private readonly structDecodeQueue: StructDecodeQueue;
+	private readonly structRegistry: StructRegistry;
+
+	constructor(private readonly options: DecodeRecordsOptions) {
+		this.structDecodeQueue = new StructDecodeQueue((_structName, queuedRecords) => {
+			for (const raw of queuedRecords) {
+				const context = this.recordContexts.get(raw);
+				if (!context) continue;
+
+				const { entryType, name, metadata } = context;
+				const structName = entryType.slice(STRUCT_PREFIX.length);
+				const base = { entryId: raw.entryId, timestamp: raw.timestamp, name, metadata, structName };
+				if (entryType.endsWith(STRUCT_ARRAY_SUFFIX)) {
+					const payload = this.structRegistry.decodeArray(structName, raw.payload);
+					if (typeof payload !== 'string') {
+						this.delayedRecords.push({
+							...base,
+							type: RecordType.StructArray,
+							payload,
+						});
+					}
+				} else {
+					const payload = this.structRegistry.decode(structName, raw.payload);
+					if (typeof payload !== 'string') {
+						this.delayedRecords.push({
+							...base,
+							type: RecordType.Struct,
+							payload,
+						});
+					}
+				}
+			}
+		});
+		this.structRegistry = new StructRegistry(this.structDecodeQueue);
+	}
+
+	decodeControl(entryId: number, timestamp: bigint, payload: ControlRecordPayload): DecodedRecord {
+		switch (payload.controlRecordType) {
+			case ControlRecordType.Start:
+				this.context.set(payload.entryId, {
+					name: normalizeEntryName(payload.entryName),
+					entryType: payload.entryType,
+					metadata: payload.entryMetadata,
+				});
+				break;
+			case ControlRecordType.Finish:
+				this.context.delete(payload.entryId);
+				break;
+			case ControlRecordType.SetMetadata: {
+				const existing = this.context.get(payload.entryId);
+				if (existing) {
+					this.context.set(payload.entryId, { ...existing, metadata: payload.entryMetadata });
+				}
+				break;
+			}
+		}
+
+		return { entryId, timestamp, type: RecordType.Control, payload };
+	}
+
+	decodeData(
+		entryId: number,
+		timestamp: bigint,
+		bytes: Uint8Array,
+		view: DataView,
+		payloadOffset: number,
+		payloadSize: number,
+	): DecodedRecord | undefined {
+		const context = this.context.get(entryId);
+		if (!context) {
+			if (this.options.strict) {
+				throw new RangeError(`No type registered for entry ID ${entryId}`);
+			}
+			return undefined;
+		}
+		const base = { entryId, timestamp, name: context.name, metadata: context.metadata };
+		switch (context.entryType) {
+			case 'boolean':
+				return { ...base, type: RecordType.Boolean, payload: byteToBoolean(view.getUint8(payloadOffset)) };
+			case 'int64':
+				return { ...base, type: RecordType.Int64, payload: view.getBigInt64(payloadOffset, true) };
+			case 'float':
+				return { ...base, type: RecordType.Float, payload: view.getFloat32(payloadOffset, true) };
+			case 'double':
+				return { ...base, type: RecordType.Double, payload: view.getFloat64(payloadOffset, true) };
+		}
+
+		const payload =
+			payloadOffset === 0 && payloadSize === bytes.byteLength
+				? bytes
+				: bytes.subarray(payloadOffset, payloadOffset + payloadSize);
+		const raw = { entryId, timestamp, payload };
+		const payloadView = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
+		const decoded = decodeNonScalarPayload(
+			raw,
+			context.entryType,
+			context.name,
+			context.metadata,
+			payloadView,
+			this.structRegistry,
+			this.structDecodeQueue,
+		);
+		if (!decoded) {
+			this.recordContexts.set(raw, context);
+		}
+		return decoded;
+	}
+}
 
 /**
  * Decode raw WPILOG records into typed values.
@@ -51,134 +176,73 @@ export function* decodeRecords(
 	records: Iterable<ReadRecord>,
 	options: DecodeRecordsOptions = { strict: false },
 ): Generator<DecodedRecord> {
-	const asyncDecodedStructs: DecodedRecord[] = [];
-	const recordContexts = new WeakMap<RawRecord, EntryContext>();
-
-	const structDecodeQueue = new StructDecodeQueue((structName, queuedRecords) => {
-		for (const raw of queuedRecords) {
-			const ctx = recordContexts.get(raw);
-			if (!ctx) continue;
-
-			const entryType = ctx.entryType;
-			const name = normalizeEntryName(ctx.entryName);
-			const metadata = ctx.entryMetadata;
-
-			if (entryType.endsWith(STRUCT_ARRAY_SUFFIX)) {
-				const normalizedName = entryType.slice(STRUCT_PREFIX.length);
-				const decoded = structRegistry.decodeArray(normalizedName, raw.payload);
-				if (typeof decoded !== 'string') {
-					asyncDecodedStructs.push({
-						entryId: raw.entryId,
-						timestamp: raw.timestamp,
-						name,
-						metadata,
-						type: RecordType.StructArray,
-						structName: normalizedName,
-						payload: decoded,
-					});
-				}
-			} else {
-				const normalizedName = entryType.slice(STRUCT_PREFIX.length);
-				const decoded = structRegistry.decode(normalizedName, raw.payload);
-				if (typeof decoded !== 'string') {
-					asyncDecodedStructs.push({
-						entryId: raw.entryId,
-						timestamp: raw.timestamp,
-						name,
-						metadata,
-						type: RecordType.Struct,
-						structName: normalizedName,
-						payload: decoded,
-					});
-				}
-			}
-		}
-	});
-
-	const structRegistry = new StructRegistry(structDecodeQueue);
-
-	const context = new Map<StartControlRecord['entryId'], EntryContext>();
+	const decoder = new RecordDecoder(options);
 
 	for (const readRecord of records) {
 		if (readRecord.kind === 'header') {
-			// Header records are informational — consumers can filter for them if needed
 			continue;
 		}
 
 		if (readRecord.kind === 'control') {
-			const controlPayload = readRecord.payload;
-
-			switch (controlPayload.controlRecordType) {
-				case ControlRecordType.Start:
-					context.set(controlPayload.entryId, {
-						entryName: controlPayload.entryName,
-						entryType: controlPayload.entryType,
-						entryMetadata: controlPayload.entryMetadata,
-					});
-					break;
-				case ControlRecordType.Finish:
-					context.delete(controlPayload.entryId);
-					break;
-				case ControlRecordType.SetMetadata: {
-					const existing = context.get(controlPayload.entryId);
-					if (existing) {
-						context.set(controlPayload.entryId, {
-							...existing,
-							entryMetadata: controlPayload.entryMetadata,
-						});
-					}
-					break;
-				}
-			}
-
-			yield {
-				entryId: readRecord.entryId,
-				timestamp: readRecord.timestamp,
-				type: RecordType.Control,
-				payload: controlPayload,
-			};
+			yield decoder.decodeControl(readRecord.entryId, readRecord.timestamp, readRecord.payload);
 			continue;
 		}
 
-		// Data record
 		const raw = readRecord.record;
-		const recordContext = context.get(raw.entryId);
-
-		if (recordContext === undefined) {
-			if (options.strict) {
-				throw new RangeError(`No type registered for entry ID ${raw.entryId}`);
-			}
-			// Corrupt log file, we can't decode this record
-			continue;
-		}
-
-		const name = normalizeEntryName(recordContext.entryName);
-		const metadata = recordContext.entryMetadata;
 		const view = new DataView(raw.payload.buffer, raw.payload.byteOffset, raw.payload.byteLength);
-
-		const decoded = decodePayload(
-			raw,
-			recordContext.entryType,
-			name,
-			metadata,
-			view,
-			structRegistry,
-			structDecodeQueue,
-		);
-
+		const decoded = decoder.decodeData(raw.entryId, raw.timestamp, raw.payload, view, 0, raw.payload.byteLength);
 		if (decoded) {
 			yield decoded;
-		} else {
-			recordContexts.set(raw, recordContext);
 		}
-
-		// Yield any structs that became decodable after schema registration
-		yield* asyncDecodedStructs;
-		asyncDecodedStructs.length = 0;
+		if (decoder.delayedRecords.length > 0) {
+			yield* decoder.delayedRecords;
+			decoder.delayedRecords.length = 0;
+		}
 	}
 }
 
-function decodePayload(
+/**
+ * Read and decode a WPILOG buffer in a single pass.
+ *
+ * This is the preferred API for fully decoded records. It avoids allocating the
+ * intermediate records produced by composing {@link readRecords} and
+ * {@link decodeRecords} while preserving the same output and strict-mode behavior.
+ */
+export function* parseDataLog(
+	input: DataLogInput,
+	options: DecodeRecordsOptions = { strict: false },
+): Generator<DecodedRecord> {
+	const cursor = new RecordCursor(input);
+	const decoder = new RecordDecoder(options);
+
+	while (cursor.next()) {
+		if (cursor.entryId === 0) {
+			yield decoder.decodeControl(cursor.entryId, cursor.timestamp, readControlRecordPayload(cursor.getPayload()));
+			continue;
+		}
+
+		const decoded = decoder.decodeData(
+			cursor.entryId,
+			cursor.timestamp,
+			cursor.bytes,
+			cursor.view,
+			cursor.payloadOffset,
+			cursor.payloadSize,
+		);
+		if (decoded) {
+			yield decoded;
+		}
+		if (decoder.delayedRecords.length > 0) {
+			yield* decoder.delayedRecords;
+			decoder.delayedRecords.length = 0;
+		}
+	}
+}
+/**
+ * Decode non-scalar payloads that require a byte slice or payload-local view.
+ * Fixed-width scalar types return from {@link RecordDecoder#decodeData} before this function so their payloads can be read directly from the input buffer.
+ */
+function decodeNonScalarPayload(
 	raw: RawRecord,
 	entryType: string,
 	name: string,
@@ -190,14 +254,6 @@ function decodePayload(
 	const base = { entryId: raw.entryId, timestamp: raw.timestamp, name, metadata };
 
 	switch (entryType) {
-		case 'boolean':
-			return { ...base, type: RecordType.Boolean, payload: byteToBoolean(view.getUint8(0)) };
-		case 'int64':
-			return { ...base, type: RecordType.Int64, payload: view.getBigInt64(0, true) };
-		case 'float':
-			return { ...base, type: RecordType.Float, payload: view.getFloat32(0, true) };
-		case 'double':
-			return { ...base, type: RecordType.Double, payload: view.getFloat64(0, true) };
 		case 'string':
 			return { ...base, type: RecordType.String, payload: TEXT_DECODER.decode(raw.payload) };
 		case 'boolean[]': {
@@ -244,7 +300,7 @@ function decodePayload(
 		}
 		case 'structschema': {
 			// Schema records: register the struct, but emit as a string record
-			const structName = name.slice('/.schema/'.length + STRUCT_PREFIX.length);
+			const structName = name.slice(STRUCT_SCHEMA_NAME_PREFIX.length);
 			const payload = TEXT_DECODER.decode(raw.payload);
 			structRegistry.register(structName, payload);
 			return { ...base, type: RecordType.String, payload };
@@ -252,9 +308,9 @@ function decodePayload(
 		default: {
 			// Try to decode as struct
 			if (entryType.startsWith(STRUCT_PREFIX)) {
+				const structName = entryType.slice(STRUCT_PREFIX.length);
 				if (entryType.endsWith(STRUCT_ARRAY_SUFFIX)) {
-					const normalizedStructName = entryType.slice(STRUCT_PREFIX.length);
-					const decoded = structRegistry.decodeArray(normalizedStructName, raw.payload);
+					const decoded = structRegistry.decodeArray(structName, raw.payload);
 
 					if (typeof decoded === 'string') {
 						structDecodeQueue.queueStructRecord(decoded, raw);
@@ -264,13 +320,12 @@ function decodePayload(
 					return {
 						...base,
 						type: RecordType.StructArray,
-						structName: normalizedStructName,
+						structName,
 						payload: decoded,
 					};
 				}
 
-				const normalizedStructName = entryType.slice(STRUCT_PREFIX.length);
-				const decoded = structRegistry.decode(normalizedStructName, raw.payload);
+				const decoded = structRegistry.decode(structName, raw.payload);
 
 				if (typeof decoded === 'string') {
 					structDecodeQueue.queueStructRecord(decoded, raw);
@@ -280,7 +335,7 @@ function decodePayload(
 				return {
 					...base,
 					type: RecordType.Struct,
-					structName: normalizedStructName,
+					structName,
 					payload: decoded,
 				};
 			}

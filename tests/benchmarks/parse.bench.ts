@@ -1,5 +1,5 @@
 import { bench, describe } from 'vite-plus/test';
-import { catalogEntries, decodeRecords, readRecords } from '../../src/index.js';
+import { catalogEntries, decodeRecords, parseDataLog, readRecords } from '../../src/index.js';
 import { FIXTURES } from './shared.js';
 
 for (const fixture of FIXTURES) {
@@ -12,6 +12,12 @@ for (const fixture of FIXTURES) {
 
 		bench('decodeRecords', () => {
 			for (const _record of decodeRecords(readRecords(fixture.bytes))) {
+				// discard
+			}
+		});
+
+		bench('parseDataLog', () => {
+			for (const _record of parseDataLog(fixture.bytes)) {
 				// discard
 			}
 		});

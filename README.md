@@ -12,14 +12,18 @@ npm install wpilog-parser
 
 ```ts
 import { readFile } from 'node:fs/promises';
-import { readRecords, decodeRecords } from 'wpilog-parser';
+import { parseDataLog } from 'wpilog-parser';
 
 const bytes = await readFile('./example.wpilog');
 
-for (const record of decodeRecords(readRecords(bytes))) {
+for (const record of parseDataLog(bytes)) {
 	console.log(record);
 }
 ```
+
+`parseDataLog()` is the preferred API for fully decoded records. It reads and decodes the file in one pass, avoiding the intermediate record allocations made by composing `readRecords()` and `decodeRecords()`.
+
+Use `readRecords()` and `decodeRecords()` separately when you need access to raw records or want to transform the record stream before decoding it. Both approaches produce the same decoded records.
 
 ## CLI
 

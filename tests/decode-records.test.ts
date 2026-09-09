@@ -53,6 +53,36 @@ function dataRecord(entryId: number, payload: Uint8Array, timestamp = 0n): ReadR
 }
 
 describe('decodeRecords', () => {
+	test('decodes scalar payloads', () => {
+		const int64 = new Uint8Array(8);
+		new DataView(int64.buffer).setBigInt64(0, -42n, true);
+		const float = new Uint8Array(4);
+		new DataView(float.buffer).setFloat32(0, 1.5, true);
+		const double = new Uint8Array(8);
+		new DataView(double.buffer).setFloat64(0, Math.PI, true);
+
+		const records = [
+			headerRecord(),
+			startControl(1, 'boolean'),
+			dataRecord(1, new Uint8Array([1])),
+			startControl(2, 'int64'),
+			dataRecord(2, int64),
+			startControl(3, 'float'),
+			dataRecord(3, float),
+			startControl(4, 'double'),
+			dataRecord(4, double),
+		];
+
+		const results = Array.from(decodeRecords(records)).filter((record) => record.type !== RecordType.Control);
+
+		expect(results).toStrictEqual([
+			{ entryId: 1, timestamp: 0n, name: '/entry-1', metadata: '', type: RecordType.Boolean, payload: true },
+			{ entryId: 2, timestamp: 0n, name: '/entry-2', metadata: '', type: RecordType.Int64, payload: -42n },
+			{ entryId: 3, timestamp: 0n, name: '/entry-3', metadata: '', type: RecordType.Float, payload: 1.5 },
+			{ entryId: 4, timestamp: 0n, name: '/entry-4', metadata: '', type: RecordType.Double, payload: Math.PI },
+		]);
+	});
+
 	test('applies metadata updates to subsequent data records', () => {
 		const records = [
 			headerRecord(),

@@ -1,5 +1,5 @@
 export { readRecords, type ReadRecord, type DataLogInput } from './read-records.js';
-export { decodeRecords, type DecodeRecordsOptions } from './decode-records.js';
+export { decodeRecords, type DecodeRecordsOptions, parseDataLog } from './decode-records.js';
 export {
 	type DataLogHeader,
 	type ControlRecordPayload,

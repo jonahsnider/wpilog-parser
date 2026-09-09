@@ -15,7 +15,7 @@ export type CatalogEntry = {
  *
  * Iterates through records, collecting Start control records.
  * Data record bytes are still read from the stream but not decoded,
- * making this much cheaper than full decoding via {@link decodeRecords}.
+ * making this much cheaper than full decoding via {@link parseDataLog}.
  */
 export function* catalogEntries(records: Iterable<ReadRecord>): Generator<CatalogEntry> {
 	const entries = new Map<number, CatalogEntry>();

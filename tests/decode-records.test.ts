@@ -10,7 +10,12 @@ function headerRecord(): ReadRecord {
 	};
 }
 
-function startControl(entryId: number, entryType: string, entryName = `entry-${entryId}`): ReadRecord {
+function startControl(
+	entryId: number,
+	entryType: string,
+	entryName = `entry-${entryId}`,
+	entryMetadata = '',
+): ReadRecord {
 	return {
 		kind: 'control',
 		entryId: 0,
@@ -20,8 +25,17 @@ function startControl(entryId: number, entryType: string, entryName = `entry-${e
 			entryId,
 			entryName,
 			entryType,
-			entryMetadata: '',
+			entryMetadata,
 		},
+	};
+}
+
+function setMetadataControl(entryId: number, entryMetadata: string): ReadRecord {
+	return {
+		kind: 'control',
+		entryId: 0,
+		timestamp: 0n,
+		payload: { controlRecordType: ControlRecordType.SetMetadata, entryId, entryMetadata },
 	};
 }
 
@@ -30,6 +44,37 @@ function dataRecord(entryId: number, payload: Uint8Array, timestamp = 0n): ReadR
 }
 
 describe('decodeRecords', () => {
+	test('applies metadata updates to subsequent data records', () => {
+		const records = [
+			headerRecord(),
+			startControl(1, 'boolean', 'enabled', 'initial'),
+			dataRecord(1, new Uint8Array([1])),
+			setMetadataControl(1, 'updated'),
+			dataRecord(1, new Uint8Array([0])),
+		];
+
+		const dataResults = Array.from(decodeRecords(records)).filter((record) => record.type === RecordType.Boolean);
+
+		expect(dataResults).toStrictEqual([
+			{
+				entryId: 1,
+				timestamp: 0n,
+				name: '/enabled',
+				metadata: 'initial',
+				type: RecordType.Boolean,
+				payload: true,
+			},
+			{
+				entryId: 1,
+				timestamp: 0n,
+				name: '/enabled',
+				metadata: 'updated',
+				type: RecordType.Boolean,
+				payload: false,
+			},
+		]);
+	});
+
 	describe('orphan data records (no Start control record)', () => {
 		test('skips orphan data records by default (lenient mode)', () => {
 			const records = [

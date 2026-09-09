@@ -8,6 +8,8 @@ const TEXT_DECODER = new TextDecoder();
 const STRUCT_PREFIX = 'struct:';
 const STRUCT_ARRAY_SUFFIX = '[]';
 
+type EntryContext = Pick<StartControlRecord, 'entryName' | 'entryType' | 'entryMetadata'>;
+
 function byteToBoolean(byte: number): boolean {
 	switch (byte) {
 		case 0:
@@ -94,10 +96,7 @@ export function* decodeRecords(
 
 	const structRegistry = new StructRegistry(structDecodeQueue);
 
-	const context = new Map<
-		StartControlRecord['entryId'],
-		Pick<StartControlRecord, 'entryName' | 'entryType' | 'entryMetadata'>
-	>();
+	const context = new Map<StartControlRecord['entryId'], EntryContext>();
 
 	for (const readRecord of records) {
 		if (readRecord.kind === 'header') {
@@ -110,11 +109,25 @@ export function* decodeRecords(
 
 			switch (controlPayload.controlRecordType) {
 				case ControlRecordType.Start:
-					context.set(controlPayload.entryId, controlPayload);
+					context.set(controlPayload.entryId, {
+						entryName: controlPayload.entryName,
+						entryType: controlPayload.entryType,
+						entryMetadata: controlPayload.entryMetadata,
+					});
 					break;
 				case ControlRecordType.Finish:
 					context.delete(controlPayload.entryId);
 					break;
+				case ControlRecordType.SetMetadata: {
+					const existing = context.get(controlPayload.entryId);
+					if (existing) {
+						context.set(controlPayload.entryId, {
+							...existing,
+							entryMetadata: controlPayload.entryMetadata,
+						});
+					}
+					break;
+				}
 			}
 
 			yield {

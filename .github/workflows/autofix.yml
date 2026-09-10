@@ -15,7 +15,6 @@ jobs:
       - name: Setup Vite+
         uses: voidzero-dev/setup-vp@v1
         with:
-          node-version: 'lts'
           cache: true
       - name: Update Vite+ configs
         run: vp config

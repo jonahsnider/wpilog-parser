@@ -51,5 +51,11 @@
 		"typescript": "7.0.2",
 		"vite-plus": "0.3.0"
 	},
+	"devEngines": {
+		"runtime": {
+			"name": "node",
+			"version": "26.x"
+		}
+	},
 	"packageManager": "pnpm@12.3.4"
 }

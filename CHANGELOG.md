@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.4.0](https://github.com/jonahsnider/wpilog-parser/compare/v2.3.0...v2.4.0) (2026-09-10)
+
+
+### Features
+
+* add parseDataLog() for faster end-to-end log parse workflows ([e0fbc63](https://github.com/jonahsnider/wpilog-parser/commit/e0fbc63a1b37f7c52f254fadbc8bc3bea5edf9fd))
+
+
+### Bug Fixes
+
+* fix struct records that reuse schema definition entry IDs ([b74bf28](https://github.com/jonahsnider/wpilog-parser/commit/b74bf28eb9f884e49cab37420df885ea5eadf24f))
+* handle SetMetadata control records ([47eb955](https://github.com/jonahsnider/wpilog-parser/commit/47eb9559922e6cc59e51b28b183b1213a4ca9a42))
+
 ## [2.3.0](https://github.com/jonahsnider/wpilog-parser/compare/v2.2.0...v2.3.0) (2026-08-24)
 
 

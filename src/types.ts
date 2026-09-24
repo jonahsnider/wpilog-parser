@@ -8,15 +8,17 @@ export type DataLogHeader = {
 };
 
 /** Control record types in the WPILOG format. */
-export enum ControlRecordType {
-	Start = 0,
-	Finish = 1,
-	SetMetadata = 2,
-}
+export const ControlRecordType = {
+	Start: 0,
+	Finish: 1,
+	SetMetadata: 2,
+} as const;
+
+export type ControlRecordType = (typeof ControlRecordType)[keyof typeof ControlRecordType];
 
 /** A control record that starts a new entry. */
 export type StartControlRecord = {
-	controlRecordType: ControlRecordType.Start;
+	controlRecordType: typeof ControlRecordType.Start;
 	entryId: number;
 	entryName: string;
 	entryType: string;
@@ -25,13 +27,13 @@ export type StartControlRecord = {
 
 /** A control record that finishes an entry. */
 export type FinishControlRecord = {
-	controlRecordType: ControlRecordType.Finish;
+	controlRecordType: typeof ControlRecordType.Finish;
 	entryId: number;
 };
 
 /** A control record that sets metadata on an entry. */
 export type SetMetadataControlRecord = {
-	controlRecordType: ControlRecordType.SetMetadata;
+	controlRecordType: typeof ControlRecordType.SetMetadata;
 	entryId: number;
 	entryMetadata: string;
 };
@@ -48,22 +50,24 @@ export type RawRecord = {
 };
 
 /** Discriminated union tag for decoded record types. */
-export enum RecordType {
-	Control = 'control',
-	Boolean = 'boolean',
-	Int64 = 'int64',
-	Float = 'float',
-	Double = 'double',
-	String = 'string',
-	BooleanArray = 'boolean[]',
-	Int64Array = 'int64[]',
-	FloatArray = 'float[]',
-	DoubleArray = 'double[]',
-	StringArray = 'string[]',
-	Struct = 'struct',
-	StructArray = 'struct[]',
-	Raw = 'raw',
-}
+export const RecordType = {
+	Control: 'control',
+	Boolean: 'boolean',
+	Int64: 'int64',
+	Float: 'float',
+	Double: 'double',
+	String: 'string',
+	BooleanArray: 'boolean[]',
+	Int64Array: 'int64[]',
+	FloatArray: 'float[]',
+	DoubleArray: 'double[]',
+	StringArray: 'string[]',
+	Struct: 'struct',
+	StructArray: 'struct[]',
+	Raw: 'raw',
+} as const;
+
+export type RecordType = (typeof RecordType)[keyof typeof RecordType];
 
 /** Decoded struct payload — a map of field names to values. */
 export type StructPayload = Map<
@@ -75,7 +79,7 @@ export type StructPayload = Map<
 export type DataRecord = Extract<DecodedRecord, { name: string }>;
 
 /** A decoded control record. */
-export type ControlRecord = Extract<DecodedRecord, { type: RecordType.Control }>;
+export type ControlRecord = Extract<DecodedRecord, { type: typeof RecordType.Control }>;
 
 /** Type guard that narrows a {@link DecodedRecord} to a {@link DataRecord}. */
 export function isDataRecord(record: DecodedRecord): record is DataRecord {
@@ -88,23 +92,23 @@ export type DecodedRecord = {
 	/** Timestamp in microseconds. */
 	timestamp: bigint;
 } & (
-	| { type: RecordType.Control; payload: ControlRecordPayload }
+	| { type: typeof RecordType.Control; payload: ControlRecordPayload }
 	| ({
 			name: string;
 			metadata: string;
 	  } & (
-			| { type: RecordType.Raw; payload: Uint8Array }
-			| { type: RecordType.Boolean; payload: boolean }
-			| { type: RecordType.Int64; payload: bigint }
-			| { type: RecordType.Float; payload: number }
-			| { type: RecordType.Double; payload: number }
-			| { type: RecordType.String; payload: string }
-			| { type: RecordType.BooleanArray; payload: boolean[] }
-			| { type: RecordType.Int64Array; payload: bigint[] }
-			| { type: RecordType.FloatArray; payload: number[] }
-			| { type: RecordType.DoubleArray; payload: number[] }
-			| { type: RecordType.StringArray; payload: string[] }
-			| { type: RecordType.Struct; structName: string; payload: StructPayload }
-			| { type: RecordType.StructArray; structName: string; payload: StructPayload[] }
+			| { type: typeof RecordType.Raw; payload: Uint8Array }
+			| { type: typeof RecordType.Boolean; payload: boolean }
+			| { type: typeof RecordType.Int64; payload: bigint }
+			| { type: typeof RecordType.Float; payload: number }
+			| { type: typeof RecordType.Double; payload: number }
+			| { type: typeof RecordType.String; payload: string }
+			| { type: typeof RecordType.BooleanArray; payload: boolean[] }
+			| { type: typeof RecordType.Int64Array; payload: bigint[] }
+			| { type: typeof RecordType.FloatArray; payload: number[] }
+			| { type: typeof RecordType.DoubleArray; payload: number[] }
+			| { type: typeof RecordType.StringArray; payload: string[] }
+			| { type: typeof RecordType.Struct; structName: string; payload: StructPayload }
+			| { type: typeof RecordType.StructArray; structName: string; payload: StructPayload[] }
 	  ))
 );

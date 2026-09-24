@@ -11,8 +11,11 @@ export class StructRegistry {
 	private static readonly TEXT_DECODER = new TextDecoder('utf-8');
 	private readonly definitions = new Map<string, StructSpecification>();
 	private readonly byteLengths = new Map<string, number>();
+	private readonly structDecodeQueue: StructDecodeQueue;
 
-	constructor(private readonly structDecodeQueue: StructDecodeQueue) {}
+	constructor(structDecodeQueue: StructDecodeQueue) {
+		this.structDecodeQueue = structDecodeQueue;
+	}
 
 	register(name: string, definition: string): void {
 		const specification = parseStructSpecification(definition);

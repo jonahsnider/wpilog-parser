@@ -57,8 +57,10 @@ class RecordDecoder {
 	private readonly recordContexts = new WeakMap<RawRecord, EntryContext>();
 	private readonly structDecodeQueue: StructDecodeQueue;
 	private readonly structRegistry: StructRegistry;
+	private readonly options: DecodeRecordsOptions;
 
-	constructor(private readonly options: DecodeRecordsOptions) {
+	constructor(options: DecodeRecordsOptions) {
+		this.options = options;
 		this.structDecodeQueue = new StructDecodeQueue((_structName, queuedRecords) => {
 			for (const raw of queuedRecords) {
 				const context = this.recordContexts.get(raw);

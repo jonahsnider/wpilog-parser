@@ -4,8 +4,11 @@ import { StructDependencyGraph } from './struct-dependency-graph.ts';
 export class StructDecodeQueue {
 	private readonly graph = new StructDependencyGraph();
 	private readonly queuedRecords = new Map<string, RawRecord[]>();
+	private readonly onStructDefined: (structName: string, records: RawRecord[]) => void;
 
-	constructor(private readonly onStructDefined: (structName: string, records: RawRecord[]) => void) {}
+	constructor(onStructDefined: (structName: string, records: RawRecord[]) => void) {
+		this.onStructDefined = onStructDefined;
+	}
 
 	queueStructRecord(structName: string, record: RawRecord): void {
 		const existing = this.queuedRecords.get(structName);

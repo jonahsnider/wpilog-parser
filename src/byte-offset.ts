@@ -1,5 +1,9 @@
 export class ByteOffset {
-	constructor(private offset = 0) {}
+	private offset: number;
+
+	constructor(offset = 0) {
+		this.offset = offset;
+	}
 
 	get(): number {
 		return this.offset;

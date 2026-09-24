@@ -18,7 +18,7 @@ export default defineConfig({
 	pack: {
 		entry: ['src/index.ts', 'src/cli.ts'],
 		dts: {
-			tsgo: true,
+			generator: 'tsgo',
 		},
 		exports: {
 			bin: { wpilog: './src/cli.ts' },

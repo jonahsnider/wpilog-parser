@@ -223,3 +223,4 @@ $RECYCLE.BIN/
 # Keep benchmark fixture logs tracked even though `logs` is ignored above
 !tests/fixtures/logs/
 !tests/fixtures/logs/**
+.vitest/

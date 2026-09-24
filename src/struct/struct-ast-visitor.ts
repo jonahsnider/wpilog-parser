@@ -1,3 +1,4 @@
+import { diagnostics } from '../diagnostics.ts';
 import type {
 	ArraySizeCstChildren,
 	BitFieldDeclarationCstChildren,
@@ -7,8 +8,8 @@ import type {
 	StandardDeclarationArrayCstChildren,
 	StructSpecificationCstChildren,
 } from './generated.js';
-import { type EnumSpecification, KnownStructTypeName, type StructDeclaration, type StructTypeName } from './types.js';
-import { BaseStructVisitorWithDefaults } from './visitors.js';
+import { type EnumSpecification, KnownStructTypeName, type StructDeclaration, type StructTypeName } from './types.ts';
+import { BaseStructVisitorWithDefaults } from './visitors.ts';
 
 export class StructAstVisitor extends BaseStructVisitorWithDefaults {
 	constructor() {
@@ -57,7 +58,7 @@ export class StructAstVisitor extends BaseStructVisitorWithDefaults {
 			case KnownStructTypeName.Uint64:
 				break;
 			default:
-				throw new RangeError('Enums must be integers');
+				throw diagnostics.WPILOG_R0009();
 		}
 
 		const entries = children.enumMember?.map((member) => this.enumMember(member.children));
@@ -78,26 +79,26 @@ export class StructAstVisitor extends BaseStructVisitorWithDefaults {
 
 		switch (dataType) {
 			case KnownStructTypeName.Boolean:
-				if (parsed !== 1) throw new RangeError('Boolean bit-field members must be 1 bit');
+				if (parsed !== 1) throw diagnostics.WPILOG_R0010({ type: dataType, width: parsed, maxBits: 1 });
 				break;
 			case KnownStructTypeName.Int8:
 			case KnownStructTypeName.Uint8:
-				if (parsed > 8) throw new RangeError('8-bit bit-field members must be less than 8 bits');
+				if (parsed > 8) throw diagnostics.WPILOG_R0010({ type: dataType, width: parsed, maxBits: 8 });
 				break;
 			case KnownStructTypeName.Int16:
 			case KnownStructTypeName.Uint16:
-				if (parsed > 16) throw new RangeError('16-bit bit-field members must be less than 16 bits');
+				if (parsed > 16) throw diagnostics.WPILOG_R0010({ type: dataType, width: parsed, maxBits: 16 });
 				break;
 			case KnownStructTypeName.Int32:
 			case KnownStructTypeName.Uint32:
-				if (parsed > 32) throw new RangeError('32-bit bit-field members must be less than 32 bits');
+				if (parsed > 32) throw diagnostics.WPILOG_R0010({ type: dataType, width: parsed, maxBits: 32 });
 				break;
 			case KnownStructTypeName.Int64:
 			case KnownStructTypeName.Uint64:
-				if (parsed > 64) throw new RangeError('64-bit bit-field members must be less than 64 bits');
+				if (parsed > 64) throw diagnostics.WPILOG_R0010({ type: dataType, width: parsed, maxBits: 64 });
 				break;
 			default:
-				throw new RangeError('Bit-field members must be integers or booleans');
+				throw diagnostics.WPILOG_R0011();
 		}
 
 		return parsed;

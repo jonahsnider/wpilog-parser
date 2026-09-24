@@ -1,6 +1,6 @@
 import { CstParser, type ParserMethod } from 'chevrotain';
 import type { StructSpecificationCstNode } from './generated.js';
-import * as Tokens from './lexer.js';
+import * as Tokens from './lexer.ts';
 
 export class StructParser extends CstParser {
 	// @ts-expect-error This is safe

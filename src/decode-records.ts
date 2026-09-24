@@ -1,7 +1,8 @@
-import { type DataLogInput, type ReadRecord, RecordCursor, readControlRecordPayload } from './read-records.js';
-import { StructDecodeQueue } from './struct/struct-decode-queue.js';
-import { StructRegistry } from './struct/struct-registry.js';
-import { ByteOffset } from './byte-offset.js';
+import { type DataLogInput, type ReadRecord, RecordCursor, readControlRecordPayload } from './read-records.ts';
+import { StructDecodeQueue } from './struct/struct-decode-queue.ts';
+import { StructRegistry } from './struct/struct-registry.ts';
+import { ByteOffset } from './byte-offset.ts';
+import { diagnostics } from './diagnostics.ts';
 import {
 	type ControlRecordPayload,
 	ControlRecordType,
@@ -9,7 +10,7 @@ import {
 	type RawRecord,
 	RecordType,
 	type StartControlRecord,
-} from './types.js';
+} from './types.ts';
 
 const TEXT_DECODER = new TextDecoder();
 const STRUCT_PREFIX = 'struct:';
@@ -29,7 +30,7 @@ function byteToBoolean(byte: number): boolean {
 		case 1:
 			return true;
 		default:
-			throw new RangeError(`Invalid boolean value ${byte}`);
+			throw diagnostics.WPILOG_R0005({ byte });
 	}
 }
 
@@ -125,7 +126,7 @@ class RecordDecoder {
 		const context = this.context.get(entryId);
 		if (!context) {
 			if (this.options.strict) {
-				throw new RangeError(`No type registered for entry ID ${entryId}`);
+				throw diagnostics.WPILOG_R0006({ entryId });
 			}
 			return undefined;
 		}

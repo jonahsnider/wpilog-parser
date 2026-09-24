@@ -1,5 +1,6 @@
-import { ByteOffset } from './byte-offset.js';
-import { type ControlRecordPayload, ControlRecordType, type DataLogHeader, type RawRecord } from './types.js';
+import { ByteOffset } from './byte-offset.ts';
+import { diagnostics } from './diagnostics.ts';
+import { type ControlRecordPayload, ControlRecordType, type DataLogHeader, type RawRecord } from './types.ts';
 
 const TEXT_ENCODER = new TextEncoder();
 const TEXT_DECODER = new TextDecoder();
@@ -48,7 +49,7 @@ export function readControlRecordPayload(payload: Uint8Array): ControlRecordPayl
 			return { controlRecordType: type, entryId, entryMetadata };
 		}
 		default:
-			throw new RangeError(`Invalid control record type ${type}`);
+			throw diagnostics.WPILOG_R0001({ type });
 	}
 }
 
@@ -83,18 +84,18 @@ function openDataLog(input: DataLogInput): {
 	const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
 
 	if (bytes.byteLength < 12) {
-		throw new RangeError('Not a WPILOG file (truncated header)');
+		throw diagnostics.WPILOG_R0002();
 	}
 	for (let i = 0; i < MAGIC.byteLength; i++) {
 		if (bytes[i] !== MAGIC[i]) {
-			throw new RangeError('Not a WPILOG file (invalid magic bytes)');
+			throw diagnostics.WPILOG_R0003();
 		}
 	}
 
 	const extraHeaderLength = view.getUint32(8, true);
 	const recordsOffset = 12 + extraHeaderLength;
 	if (recordsOffset > bytes.byteLength) {
-		throw new RangeError('Not a WPILOG file (truncated extra header)');
+		throw diagnostics.WPILOG_R0004();
 	}
 
 	return {

@@ -1,7 +1,8 @@
-import { lexer } from './lexer.js';
-import { parser } from './parser.js';
-import type { StructDeclaration } from './types.js';
-import { StructAstVisitor } from './struct-ast-visitor.js';
+import { diagnostics } from '../diagnostics.ts';
+import { lexer } from './lexer.ts';
+import { parser } from './parser.ts';
+import type { StructDeclaration } from './types.ts';
+import { StructAstVisitor } from './struct-ast-visitor.ts';
 
 const structAstVisitor = new StructAstVisitor();
 
@@ -18,7 +19,7 @@ export function parseStructSpecification(declaration: string): StructDeclaration
 	const lexingResult = lexer.tokenize(declaration);
 
 	if (lexingResult.errors.length > 0) {
-		throw new AggregateError(lexingResult.errors, 'Failed to lex struct specification');
+		throw diagnostics.WPILOG_R0007({ cause: new AggregateError(lexingResult.errors) });
 	}
 
 	parser.input = lexingResult.tokens;
@@ -26,7 +27,7 @@ export function parseStructSpecification(declaration: string): StructDeclaration
 	const cstNode = parser.structSpecification();
 
 	if (parser.errors.length > 0) {
-		throw new AggregateError(parser.errors, 'Failed to parse struct specification');
+		throw diagnostics.WPILOG_R0008({ cause: new AggregateError(parser.errors) });
 	}
 
 	const created = structAstVisitor.structSpecification(cstNode.children);

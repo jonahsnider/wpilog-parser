@@ -1,6 +1,6 @@
-import { normalizeEntryName } from './decode-records.js';
-import type { ReadRecord } from './read-records.js';
-import { ControlRecordType } from './types.js';
+import { normalizeEntryName } from './decode-records.ts';
+import type { ReadRecord } from './read-records.ts';
+import { ControlRecordType } from './types.ts';
 
 /** An entry definition from the WPILOG catalog. */
 export type CatalogEntry = {

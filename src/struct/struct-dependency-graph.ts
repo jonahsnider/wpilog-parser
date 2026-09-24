@@ -1,4 +1,5 @@
-import { KnownStructTypeName } from './types.js';
+import { diagnostics } from '../diagnostics.ts';
+import { KnownStructTypeName } from './types.ts';
 
 const EMPTY_SET: Set<never> = new Set();
 
@@ -19,7 +20,7 @@ export class StructDependencyGraph {
 		}
 
 		if (this.hasCycle(name)) {
-			throw new RangeError(`Cycle detected in the dependency graph for ${name}`);
+			throw diagnostics.WPILOG_R0012({ name });
 		}
 	}
 

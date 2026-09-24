@@ -1,4 +1,4 @@
-import type { StructPayload } from './types.js';
+import type { StructPayload } from './types.ts';
 
 /** Convert a {@link StructPayload} Map to a plain JSON-compatible object. */
 export function structPayloadToJson(payload: StructPayload): object {

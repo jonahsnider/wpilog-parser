@@ -1,8 +1,9 @@
-import { ByteOffset } from '../byte-offset.js';
-import type { StructPayload } from '../types.js';
-import { parseStructSpecification } from './parse-struct.js';
-import type { StructDecodeQueue } from './struct-decode-queue.js';
-import { KnownStructTypeName, type StructDeclaration, type StructSpecification } from './types.js';
+import { ByteOffset } from '../byte-offset.ts';
+import { diagnostics } from '../diagnostics.ts';
+import type { StructPayload } from '../types.ts';
+import { parseStructSpecification } from './parse-struct.ts';
+import type { StructDecodeQueue } from './struct-decode-queue.ts';
+import { KnownStructTypeName, type StructDeclaration, type StructSpecification } from './types.ts';
 
 const STRUCT_ARRAY_SUFFIX = '[]';
 
@@ -27,7 +28,7 @@ export class StructRegistry {
 		const definition = this.definitions.get(name);
 
 		if (!definition) {
-			throw new RangeError(`Unknown struct definition: ${name}`);
+			throw diagnostics.WPILOG_R0013({ name });
 		}
 
 		return definition;
@@ -71,7 +72,7 @@ export class StructRegistry {
 
 		for (const member of specification) {
 			if (member.bitWidth) {
-				throw new Error('Bit-field members are not implemented');
+				throw diagnostics.WPILOG_R0014();
 			}
 
 			switch (member.value) {
@@ -287,7 +288,7 @@ export class StructRegistry {
 
 	private calculateByteLength(member: StructDeclaration): number | string {
 		if (member.bitWidth) {
-			throw new Error('Bit-field members are not implemented');
+			throw diagnostics.WPILOG_R0014();
 		}
 
 		let byteLengthForOne = 0;

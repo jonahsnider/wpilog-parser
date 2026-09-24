@@ -1,7 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { encode as encodeAsToon } from '@toon-format/toon';
-import { catalogEntries, type CatalogEntry } from '../catalog.js';
-import { readRecords } from '../read-records.js';
+import { Diagnostic } from 'nostics';
+import { catalogEntries, type CatalogEntry } from '../catalog.ts';
+import { diagnostics } from '../diagnostics.ts';
+import { readRecords } from '../read-records.ts';
 
 export type CatalogFormat = 'toon' | 'json' | 'jsonl' | 'ndjson' | 'csv';
 
@@ -18,15 +20,20 @@ export async function catalogFile(filePath: string): Promise<CatalogEntry[]> {
 		bytes = await readFile(filePath);
 	} catch (error) {
 		if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-			throw new Error(`File not found: ${'path' in error ? String(error.path) : 'unknown path'}`, {
-				cause: error,
-			});
+			throw diagnostics.WPILOG_C0003({ filePath, cause: error });
 		}
 
 		throw error;
 	}
 
-	return Array.from(catalogEntries(readRecords(bytes)));
+	try {
+		return Array.from(catalogEntries(readRecords(bytes)));
+	} catch (error) {
+		if (error instanceof Diagnostic) {
+			error.sources = [filePath, ...(error.sources ?? [])];
+		}
+		throw error;
+	}
 }
 
 export function selectCatalogFormat(options: CatalogOutputOptions): CatalogFormat {
@@ -34,7 +41,7 @@ export function selectCatalogFormat(options: CatalogOutputOptions): CatalogForma
 		(format): format is CatalogFormat => Boolean(format),
 	);
 	if (selected.length > 1) {
-		throw new TypeError('Output flags cannot be combined');
+		throw diagnostics.WPILOG_C0002();
 	}
 	return selected[0] ?? 'toon';
 }

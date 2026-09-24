@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 
 import { cac } from 'cac';
+import { Diagnostic, formatDiagnostic } from 'nostics';
 import packageJson from '../package.json' with { type: 'json' };
-import { catalogFile, type CatalogOutputOptions, formatCatalog, selectCatalogFormat } from './cli/catalog.js';
+import { catalogFile, type CatalogOutputOptions, formatCatalog, selectCatalogFormat } from './cli/catalog.ts';
+import { diagnostics } from './diagnostics.ts';
 
 const cli = cac('wpilog');
 
@@ -23,17 +25,18 @@ cli.help();
 cli.version(packageJson.version);
 
 try {
-	const parsed = cli.parse(process.argv, { run: true });
+	const parsed = cli.parse(process.argv, { run: false });
+	await cli.runMatchedCommand();
 
 	if (!cli.matchedCommand && !parsed.options.help && !parsed.options.version) {
 		if (parsed.args[0]) {
-			throw new RangeError(`Unknown command \`${parsed.args[0]}\``);
+			throw diagnostics.WPILOG_C0001({ command: parsed.args[0] });
 		}
 		cli.outputHelp();
 	}
 } catch (error) {
-	// CAC throws parse and validation errors for callers to present consistently.
-	const message = error instanceof Error ? error.message : String(error);
-	console.error(`wpilog: ${message}`);
-	process.exit(1);
+	const message =
+		error instanceof Diagnostic ? formatDiagnostic(error) : error instanceof Error ? error.message : String(error);
+	console.error(error instanceof Diagnostic ? message : `wpilog: ${message}`);
+	process.exitCode = 1;
 }

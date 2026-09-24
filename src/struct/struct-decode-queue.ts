@@ -1,5 +1,5 @@
-import type { RawRecord } from '../types.js';
-import { StructDependencyGraph } from './struct-dependency-graph.js';
+import type { RawRecord } from '../types.ts';
+import { StructDependencyGraph } from './struct-dependency-graph.ts';
 
 export class StructDecodeQueue {
 	private readonly graph = new StructDependencyGraph();

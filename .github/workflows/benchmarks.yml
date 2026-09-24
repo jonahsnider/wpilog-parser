@@ -18,6 +18,7 @@ jobs:
       - name: Setup Vite+
         uses: voidzero-dev/setup-vp@v1
         with:
+          node-version: '24.x'
           cache: true
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v5

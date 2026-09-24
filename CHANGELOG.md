@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.4.0](https://github.com/jonahsnider/wpilog-parser/compare/v2.3.0...v2.4.0) (2026-09-24)
+
+
+### Features
+
+* add parseDataLog() for faster end-to-end log parse workflows ([e0fbc63](https://github.com/jonahsnider/wpilog-parser/commit/e0fbc63a1b37f7c52f254fadbc8bc3bea5edf9fd))
+* use structured error messages for CLI and parser ([c153489](https://github.com/jonahsnider/wpilog-parser/commit/c153489048f3e93d518a4065841db56e817001c5))
+
+
+### Bug Fixes
+
+* fix struct records that reuse schema definition entry IDs ([b74bf28](https://github.com/jonahsnider/wpilog-parser/commit/b74bf28eb9f884e49cab37420df885ea5eadf24f))
+* handle SetMetadata control records ([47eb955](https://github.com/jonahsnider/wpilog-parser/commit/47eb9559922e6cc59e51b28b183b1213a4ca9a42))
+* only use erasable TS syntax ([4c39435](https://github.com/jonahsnider/wpilog-parser/commit/4c39435ecb59a97c99463ca219d8b84208f54a09))
+
 ## [2.3.0](https://github.com/jonahsnider/wpilog-parser/compare/v2.2.0...v2.3.0) (2026-08-24)
 
 

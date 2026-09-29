@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.1](https://github.com/jonahsnider/wpilog-parser/compare/v2.4.0...v2.4.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* fix path to wpilog binary in package.json ([ec35788](https://github.com/jonahsnider/wpilog-parser/commit/ec357884e33457a2fba4d44220da51b64831d682))
+
 ## [2.4.0](https://github.com/jonahsnider/wpilog-parser/compare/v2.3.0...v2.4.0) (2026-09-29)
 
 

@@ -14,7 +14,7 @@
 		"url": "git+https://github.com/jonahsnider/wpilog-parser.git"
 	},
 	"bin": {
-		"wpilog": "./dist/cli.mjs"
+		"wpilog": "dist/cli.mjs"
 	},
 	"files": [
 		"dist",

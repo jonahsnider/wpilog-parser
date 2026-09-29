@@ -1,6 +1,7 @@
 import { ByteOffset } from '../byte-offset.ts';
 import { diagnostics } from '../diagnostics.ts';
 import type { StructPayload } from '../types.ts';
+import { BitFieldTracker, decodeBitField } from './bit-field.ts';
 import { parseStructSpecification } from './parse-struct.ts';
 import type { StructDecodeQueue } from './struct-decode-queue.ts';
 import { KnownStructTypeName, type StructDeclaration, type StructSpecification } from './types.ts';
@@ -72,11 +73,18 @@ export class StructRegistry {
 		const result: StructPayload = new Map();
 
 		const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
+		const bitFields = new BitFieldTracker();
 
 		for (const member of specification) {
-			if (member.bitWidth) {
-				throw diagnostics.WPILOG_R0014();
+			const memberByteLength = this.calculateByteLength(member);
+			const bitField = typeof memberByteLength === 'number' ? bitFields.next(member, memberByteLength) : undefined;
+			if (bitField) {
+				offset.advance(bitField.bytesToAdvance);
+				result.set(member.name, decodeBitField(view, offset.get(), member, bitField));
+				continue;
 			}
+
+			offset.advance(bitFields.flush());
 
 			switch (member.value) {
 				case KnownStructTypeName.Boolean:
@@ -260,6 +268,7 @@ export class StructRegistry {
 				}
 			}
 		}
+		offset.advance(bitFields.flush());
 
 		return result;
 	}
@@ -274,6 +283,7 @@ export class StructRegistry {
 		const definition = this.getDefinition(name);
 
 		let totalByteLength = 0;
+		const bitFields = new BitFieldTracker();
 
 		for (const member of definition) {
 			const memberByteLengthOrBlocker = this.calculateByteLength(member);
@@ -282,18 +292,21 @@ export class StructRegistry {
 				return memberByteLengthOrBlocker;
 			}
 
-			totalByteLength += memberByteLengthOrBlocker;
+			const bitField = bitFields.next(member, memberByteLengthOrBlocker);
+			if (bitField) {
+				totalByteLength += bitField.bytesToAdvance;
+				continue;
+			}
+
+			totalByteLength += bitFields.flush() + memberByteLengthOrBlocker;
 		}
+		totalByteLength += bitFields.flush();
 
 		this.byteLengths.set(name, totalByteLength);
 		return totalByteLength;
 	}
 
 	private calculateByteLength(member: StructDeclaration): number | string {
-		if (member.bitWidth) {
-			throw diagnostics.WPILOG_R0014();
-		}
-
 		let byteLengthForOne = 0;
 		switch (member.value) {
 			case KnownStructTypeName.Boolean:

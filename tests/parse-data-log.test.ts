@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { isDeepStrictEqual } from 'node:util';
 import { describe, expect, test } from 'vite-plus/test';
-import { decodeRecords, parseDataLog, readRecords } from '../src/index.js';
+import { decodeRecords, parseDataLog, readRecords, RecordType } from '../src/index.js';
 
 describe('parseDataLog', () => {
 	test('matches the composed parser for a real log', async () => {
@@ -21,6 +21,32 @@ describe('parseDataLog', () => {
 		}
 
 		expect(count).toBe(200_349);
+	});
+
+	test('decodes control word bit fields from a real log', async () => {
+		const bytes = await readFile(new URL('./fixtures/logs/WPILIB_TBD_aba74b981a582b4b.wpilog', import.meta.url));
+		const controlWords = Array.from(parseDataLog(bytes)).flatMap((record) => {
+			if (
+				record.type !== RecordType.Struct ||
+				(record.name !== '/NT:/DriverStation/ControlWord' && record.name !== '/DS:controlWord')
+			) {
+				return [];
+			}
+			return [{ name: record.name, payload: record.payload }];
+		});
+
+		const expectedPayload = new Map<string, bigint | boolean>([
+			['opModeHash', 0n],
+			['robotMode', 0n],
+			['enabled', false],
+			['eStop', false],
+			['fmsAttached', false],
+			['dsAttached', false],
+		]);
+		expect(controlWords).toStrictEqual([
+			{ name: '/NT:/DriverStation/ControlWord', payload: expectedPayload },
+			{ name: '/DS:controlWord', payload: expectedPayload },
+		]);
 	});
 
 	test('supports strict orphan-record validation', () => {

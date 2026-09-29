@@ -68,9 +68,6 @@ export const diagnostics = defineDiagnostics({
 			why: (p: { name: string }) => `Unknown struct definition: ${p.name}`,
 			fix: 'Register the struct definition before decoding its records.',
 		},
-		WPILOG_R0014: {
-			why: 'Bit-field members are not implemented',
-			fix: 'Avoid bit-field members in struct definitions until decoding support is available.',
-		},
+		// WPILOG_R0014 was published for unsupported bit fields and must not be reused.
 	},
 });

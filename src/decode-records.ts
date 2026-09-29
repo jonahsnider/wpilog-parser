@@ -303,7 +303,7 @@ function decodeNonScalarPayload(
 		}
 		case 'structschema': {
 			// Schema records: register the struct, but emit as a string record
-			const structName = name.slice(STRUCT_SCHEMA_NAME_PREFIX.length);
+			const structName = name.slice(name.indexOf(STRUCT_SCHEMA_NAME_PREFIX) + STRUCT_SCHEMA_NAME_PREFIX.length);
 			const payload = TEXT_DECODER.decode(raw.payload);
 			structRegistry.register(structName, payload);
 			return { ...base, type: RecordType.String, payload };

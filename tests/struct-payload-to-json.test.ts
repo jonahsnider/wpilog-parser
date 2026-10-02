@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vite-plus/test';
-import { structPayloadToJson } from '../src/struct-payload-to-json.js';
-import type { StructPayload } from '../src/types.js';
+import { structPayloadToJson } from '../src/struct-payload-to-json.ts';
+import type { StructPayload } from '../src/types.ts';
 
 type StructPayloadValue = StructPayload extends Map<unknown, infer V> ? V : never;
 

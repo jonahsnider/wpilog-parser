@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vite-plus/test';
-import { parseStructSpecification } from '../../src/struct/parse-struct.js';
-import { KnownStructTypeName } from '../../src/struct/types.js';
+import { parseStructSpecification } from '../../src/struct/parse-struct.ts';
+import { KnownStructTypeName } from '../../src/struct/types.ts';
 
 describe('parse struct specification', () => {
 	describe('standard declarations', () => {

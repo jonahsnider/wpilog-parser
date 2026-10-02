@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vite-plus/test';
-import type { StructPayload } from '../../src/types.js';
-import { StructDecodeQueue } from '../../src/struct/struct-decode-queue.js';
-import { StructRegistry } from '../../src/struct/struct-registry.js';
+import type { StructPayload } from '../../src/types.ts';
+import { StructDecodeQueue } from '../../src/struct/struct-decode-queue.ts';
+import { StructRegistry } from '../../src/struct/struct-registry.ts';
 
 describe('calculate byte size', () => {
 	test('bool value', () => {

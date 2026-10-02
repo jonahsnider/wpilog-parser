@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vite-plus/test';
-import { type DecodedRecord, RecordType, isDataRecord } from '../src/types.js';
+import { type DecodedRecord, RecordType, isDataRecord } from '../src/types.ts';
 
 describe('isDataRecord', () => {
 	test('returns true for data records', () => {

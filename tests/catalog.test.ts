@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vite-plus/test';
-import { catalogEntries } from '../src/catalog.js';
-import { readRecords } from '../src/read-records.js';
-import { ControlRecordType } from '../src/types.js';
+import { catalogEntries } from '../src/catalog.ts';
+import { readRecords } from '../src/read-records.ts';
+import { ControlRecordType } from '../src/types.ts';
 
 const TEXT_ENCODER = new TextEncoder();
 

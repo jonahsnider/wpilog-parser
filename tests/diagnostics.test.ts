@@ -3,9 +3,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Diagnostic } from 'nostics';
 import { expect, test } from 'vite-plus/test';
-import { catalogFile, selectCatalogFormat } from '../src/cli/catalog.js';
-import { parseDataLog } from '../src/decode-records.js';
-import { parseStructSpecification } from '../src/struct/parse-struct.js';
+import { catalogFile, selectCatalogFormat } from '../src/cli/catalog.ts';
+import { parseDataLog } from '../src/decode-records.ts';
+import { parseStructSpecification } from '../src/struct/parse-struct.ts';
 
 test('parser errors have a stable code and actionable fix', () => {
 	try {

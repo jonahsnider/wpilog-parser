@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vite-plus/test';
-import { type ReadRecord, readRecords } from '../src/read-records.js';
-import { ControlRecordType } from '../src/types.js';
+import { type ReadRecord, readRecords } from '../src/read-records.ts';
+import { ControlRecordType } from '../src/types.ts';
 
 const TEXT_ENCODER = new TextEncoder();
 

@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vite-plus/test';
-import { StructDecodeQueue } from '../../src/struct/struct-decode-queue.js';
-import type { RawRecord } from '../../src/types.js';
+import { StructDecodeQueue } from '../../src/struct/struct-decode-queue.ts';
+import type { RawRecord } from '../../src/types.ts';
 
 describe('struct decode queue', () => {
 	test('waits for struct definition before processing queued records', () => {

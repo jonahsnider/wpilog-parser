@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vite-plus/test';
-import { StructDependencyGraph } from '../../src/struct/struct-dependency-graph.js';
+import { StructDependencyGraph } from '../../src/struct/struct-dependency-graph.ts';
 
 describe('struct dependency graph', () => {
 	test('A', () => {

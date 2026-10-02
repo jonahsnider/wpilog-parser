@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { isDeepStrictEqual } from 'node:util';
 import { describe, expect, test } from 'vite-plus/test';
-import { decodeRecords, parseDataLog, readRecords, RecordType } from '../src/index.js';
+import { decodeRecords, parseDataLog, readRecords, RecordType } from '../src/index.ts';
 
 describe('parseDataLog', () => {
 	test('matches the composed parser for a real log', async () => {

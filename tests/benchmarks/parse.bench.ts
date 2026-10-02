@@ -1,6 +1,6 @@
 import { test, describe } from 'vite-plus/test';
-import { catalogEntries, decodeRecords, parseDataLog, readRecords } from '../../src/index.js';
-import { FIXTURES } from './shared.js';
+import { catalogEntries, decodeRecords, parseDataLog, readRecords } from '../../src/index.ts';
+import { FIXTURES } from './shared.ts';
 
 for (const fixture of FIXTURES) {
 	describe(`${fixture.name}`, () => {

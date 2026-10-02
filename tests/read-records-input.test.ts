@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vite-plus/test';
-import { readRecords } from '../src/read-records.js';
+import { readRecords } from '../src/read-records.ts';
 
 const TEXT_ENCODER = new TextEncoder();
 

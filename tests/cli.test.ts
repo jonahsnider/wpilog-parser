@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vite-plus/test';
-import { formatCatalog, selectCatalogFormat } from '../src/cli/catalog.js';
+import { formatCatalog, selectCatalogFormat } from '../src/cli/catalog.ts';
 
 const ENTRIES = [
 	{ entryId: 1, name: '/Robot/Pose', type: 'struct:Pose2d', metadata: '' },

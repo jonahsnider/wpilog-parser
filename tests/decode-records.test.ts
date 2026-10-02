@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vite-plus/test';
-import { decodeRecords } from '../src/decode-records.js';
-import type { ReadRecord } from '../src/read-records.js';
-import { ControlRecordType, RecordType } from '../src/types.js';
+import { decodeRecords } from '../src/decode-records.ts';
+import type { ReadRecord } from '../src/read-records.ts';
+import { ControlRecordType, RecordType } from '../src/types.ts';
 
 function headerRecord(): ReadRecord {
 	return {

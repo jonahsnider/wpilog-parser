@@ -2,6 +2,14 @@ import { describe, expect, test } from 'vite-plus/test';
 import { StructDependencyGraph } from '../../src/struct/struct-dependency-graph.ts';
 
 describe('struct dependency graph', () => {
+	test('replaces old dependencies when a schema changes', () => {
+		const graph = new StructDependencyGraph();
+		graph.registerSchema('A', ['B']);
+		graph.registerSchema('B', []);
+		graph.registerSchema('A', []);
+		graph.registerSchema('B', ['A']);
+		expect(graph.getDependencies('B')).toStrictEqual(new Set(['B', 'A']));
+	});
 	test('A', () => {
 		const graph = new StructDependencyGraph();
 		graph.registerSchema('MyStruct', []);

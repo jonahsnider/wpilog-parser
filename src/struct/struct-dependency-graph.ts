@@ -9,15 +9,7 @@ export class StructDependencyGraph {
 	);
 
 	registerSchema(name: string, innerStructNames: Iterable<string>): void {
-		const existing = this.allDependencies.get(name);
-
-		if (existing) {
-			for (const innerStructName of innerStructNames) {
-				existing.add(innerStructName);
-			}
-		} else {
-			this.allDependencies.set(name, new Set(innerStructNames));
-		}
+		this.allDependencies.set(name, new Set(innerStructNames));
 
 		if (this.hasCycle(name)) {
 			throw diagnostics.WPILOG_R0012({ name });

@@ -6,7 +6,7 @@ export function structPayloadToJson(payload: StructPayload): object {
 
 	for (const [key, value] of payload) {
 		if (value instanceof Map) {
-			result[key] = structPayloadToJson(value as StructPayload);
+			result[key] = structPayloadToJson(value);
 		} else if (Array.isArray(value) && value.length > 0 && value[0] instanceof Map) {
 			result[key] = (value as StructPayload[]).map((v) => structPayloadToJson(v));
 		} else {

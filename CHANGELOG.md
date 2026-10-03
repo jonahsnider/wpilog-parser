@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.4.2](https://github.com/jonahsnider/wpilog-parser/compare/v2.4.1...v2.4.2) (2026-10-03)
+
+
+### Bug Fixes
+
+* replace dependencies when struct schemas change ([76d4bf9](https://github.com/jonahsnider/wpilog-parser/commit/76d4bf9ec41019b134803e8d6a8068ffbba22839))
+
+
+### Performance Improvements
+
+* improve struct parsing by compiling decoders for struct schemas ([a6f827e](https://github.com/jonahsnider/wpilog-parser/commit/a6f827ea3bfbe62272d45efc8ca4ad6a7350c75b))
+
 ## [2.4.1](https://github.com/jonahsnider/wpilog-parser/compare/v2.4.0...v2.4.1) (2026-09-29)
 
 

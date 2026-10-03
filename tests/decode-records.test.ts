@@ -53,34 +53,39 @@ function dataRecord(entryId: number, payload: Uint8Array, timestamp = 0n): ReadR
 }
 
 describe('decodeRecords', () => {
-	test.for(['generated', 'CSP'] as const)('decodes queued struct arrays after dependencies arrive (%s)', (mode) => {
-		if (mode === 'CSP') {
-			vi.spyOn(globalThis, 'Function').mockImplementation(function () {
-				throw new EvalError('Code generation disallowed by CSP');
-			});
-		}
-		try {
-			const records = [
-				headerRecord(),
-				startControl(1, 'struct:Outer[]'),
-				startControl(2, 'structschema', '.schema/struct:Outer'),
-				dataRecord(2, new TextEncoder().encode('Inner value')),
-				dataRecord(1, new Uint8Array([42, 7])),
-				startControl(3, 'structschema', '.schema/struct:Inner'),
-				dataRecord(3, new TextEncoder().encode('uint8 count')),
-			];
-			const structs = Array.from(decodeRecords(records)).filter((record) => record.type === RecordType.StructArray);
-			expect(structs).toHaveLength(1);
-			expect(structs[0]?.payload).toStrictEqual([
-				new Map([['value', new Map([['count', 42]])]]),
-				new Map([['value', new Map([['count', 7]])]]),
-			]);
-		} finally {
-			vi.restoreAllMocks();
-		}
-	});
+	// CSP cases replace the global Function constructor and run sequentially.
+	test.for(['generated', 'CSP'] as const)(
+		'decodes queued struct arrays after dependencies arrive (%s)',
+		{ concurrent: false },
+		(mode) => {
+			if (mode === 'CSP') {
+				vi.spyOn(globalThis, 'Function').mockImplementation(function () {
+					throw new EvalError('Code generation disallowed by CSP');
+				});
+			}
+			try {
+				const records = [
+					headerRecord(),
+					startControl(1, 'struct:Outer[]'),
+					startControl(2, 'structschema', '.schema/struct:Outer'),
+					dataRecord(2, new TextEncoder().encode('Inner value')),
+					dataRecord(1, new Uint8Array([42, 7])),
+					startControl(3, 'structschema', '.schema/struct:Inner'),
+					dataRecord(3, new TextEncoder().encode('uint8 count')),
+				];
+				const structs = Array.from(decodeRecords(records)).filter((record) => record.type === RecordType.StructArray);
+				expect(structs).toHaveLength(1);
+				expect(structs[0]?.payload).toStrictEqual([
+					new Map([['value', new Map([['count', 42]])]]),
+					new Map([['value', new Map([['count', 7]])]]),
+				]);
+			} finally {
+				vi.restoreAllMocks();
+			}
+		},
+	);
 
-	test('decodes scalar payloads', () => {
+	test('decodes scalar payloads', ({ expect }) => {
 		const int64 = new Uint8Array(8);
 		new DataView(int64.buffer).setBigInt64(0, -42n, true);
 		const float = new Uint8Array(4);
@@ -110,7 +115,7 @@ describe('decodeRecords', () => {
 		]);
 	});
 
-	test('applies metadata updates to subsequent data records', () => {
+	test('applies metadata updates to subsequent data records', ({ expect }) => {
 		const records = [
 			headerRecord(),
 			startControl(1, 'boolean', 'enabled', 'initial'),
@@ -141,7 +146,7 @@ describe('decodeRecords', () => {
 		]);
 	});
 
-	test('retains the original entry context while waiting for a struct schema', () => {
+	test('retains the original entry context while waiting for a struct schema', ({ expect }) => {
 		const records = [
 			headerRecord(),
 			startControl(1, 'struct:Old', 'old-entry', 'old-metadata'),
@@ -168,7 +173,7 @@ describe('decodeRecords', () => {
 	});
 
 	describe('orphan data records (no Start control record)', () => {
-		test('skips orphan data records by default (lenient mode)', () => {
+		test('skips orphan data records by default (lenient mode)', ({ expect }) => {
 			const records = [
 				headerRecord(),
 				startControl(1, 'int64'),
@@ -186,7 +191,7 @@ describe('decodeRecords', () => {
 			expect(dataResults[1]).toMatchObject({ entryId: 1, type: RecordType.Int64, payload: 43n });
 		});
 
-		test('throws on orphan data records when strict: true', () => {
+		test('throws on orphan data records when strict: true', ({ expect }) => {
 			const records = [headerRecord(), dataRecord(99, new Uint8Array([0]))];
 
 			expect(() => Array.from(decodeRecords(records, { strict: true }))).toThrowError(

@@ -3,7 +3,7 @@ import { catalogEntries, decodeRecords, parseDataLog, readRecords } from '../../
 import { FIXTURES } from './shared.ts';
 
 for (const fixture of FIXTURES) {
-	describe(`${fixture.name}`, () => {
+	describe(`${fixture.name}`, { concurrent: false }, () => {
 		test('readRecords', async ({ bench }) => {
 			await bench('readRecords', () => {
 				for (const _record of readRecords(fixture.bytes)) {

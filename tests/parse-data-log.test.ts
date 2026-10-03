@@ -1,10 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import { isDeepStrictEqual } from 'node:util';
-import { describe, expect, test } from 'vite-plus/test';
+import { describe, test } from 'vite-plus/test';
 import { decodeRecords, parseDataLog, readRecords, RecordType } from '../src/index.ts';
 
 describe('parseDataLog', () => {
-	test('matches the composed parser for a real log', async () => {
+	test('matches the composed parser for a real log', async ({ expect }) => {
 		const bytes = await readFile(new URL('./fixtures/logs/FRC_20250727_235138__E14.wpilog', import.meta.url));
 		const expected = decodeRecords(readRecords(bytes));
 		const actual = parseDataLog(bytes);
@@ -23,7 +23,7 @@ describe('parseDataLog', () => {
 		expect(count).toBe(200_349);
 	});
 
-	test('decodes control word bit fields from a real log', async () => {
+	test('decodes control word bit fields from a real log', async ({ expect }) => {
 		const bytes = await readFile(new URL('./fixtures/logs/WPILIB_TBD_aba74b981a582b4b.wpilog', import.meta.url));
 		const controlWords = Array.from(parseDataLog(bytes)).flatMap((record) => {
 			if (
@@ -49,13 +49,13 @@ describe('parseDataLog', () => {
 		]);
 	});
 
-	test('supports strict orphan-record validation', () => {
+	test('supports strict orphan-record validation', ({ expect }) => {
 		const bytes = new Uint8Array([...new TextEncoder().encode('WPILOG'), 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1]);
 
 		expect(() => Array.from(parseDataLog(bytes, { strict: true }))).toThrowError('No type registered for entry ID 1');
 	});
 
-	test('validates the file header', () => {
+	test('validates the file header', ({ expect }) => {
 		expect(() => Array.from(parseDataLog(new Uint8Array(0)))).toThrowError('Not a WPILOG file');
 	});
 });

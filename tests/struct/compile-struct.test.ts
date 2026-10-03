@@ -19,7 +19,8 @@ function compileAndSnapshot(registry: StructRegistry, name: string) {
 	}
 }
 
-describe('compiled struct decoder', () => {
+describe('compiled struct decoder', { concurrent: false }, () => {
+	// Source snapshots spy on the global Function constructor and run sequentially.
 	test.for(STRUCT_FIXTURES)('$name matches the interpreter', (fixture) => {
 		const { registry, payloads } = createStructFixture(fixture);
 		const decoder = compileAndSnapshot(registry, fixture.name);
@@ -118,7 +119,7 @@ describe('compiled struct decoder', () => {
 		expect(structPayloadToJson(registry.decode('Outer', bytes) as StructPayload)).toStrictEqual(expected);
 	});
 
-	test('rejects truncated numeric payloads', () => {
+	test.concurrent('rejects truncated numeric payloads', ({ expect }) => {
 		const registry = new StructRegistry(new StructDecodeQueue(() => {}));
 		registry.register('Value', 'double value');
 		expect(() => registry.decode('Value', new Uint8Array(7))).toThrow(RangeError);

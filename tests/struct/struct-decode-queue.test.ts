@@ -1,9 +1,9 @@
-import { describe, expect, test, vi } from 'vite-plus/test';
+import { describe, test, vi } from 'vite-plus/test';
 import { StructDecodeQueue } from '../../src/struct/struct-decode-queue.ts';
 import type { RawRecord } from '../../src/types.ts';
 
 describe('struct decode queue', () => {
-	test('waits for struct definition before processing queued records', () => {
+	test('waits for struct definition before processing queued records', ({ expect }) => {
 		const callback = vi.fn();
 		const queue = new StructDecodeQueue(callback);
 

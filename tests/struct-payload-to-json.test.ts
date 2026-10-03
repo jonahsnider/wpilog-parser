@@ -1,11 +1,11 @@
-import { describe, expect, test } from 'vite-plus/test';
+import { describe, test } from 'vite-plus/test';
 import { structPayloadToJson } from '../src/struct-payload-to-json.ts';
 import type { StructPayload } from '../src/types.ts';
 
 type StructPayloadValue = StructPayload extends Map<unknown, infer V> ? V : never;
 
 describe('struct payload to JSON', () => {
-	test('Translation2d', () => {
+	test('Translation2d', ({ expect }) => {
 		const payload: StructPayload = new Map([
 			['x', 1.0],
 			['y', 2.0],
@@ -15,7 +15,7 @@ describe('struct payload to JSON', () => {
 		expect(json).toStrictEqual({ x: 1.0, y: 2.0 });
 	});
 
-	test('Pose2d', () => {
+	test('Pose2d', ({ expect }) => {
 		const payload: StructPayload = new Map<string, StructPayloadValue>([
 			[
 				'translation',

@@ -5,7 +5,7 @@ import type { StructPayload } from '../../src/types.ts';
 import { createStructFixture, STRUCT_FIXTURES } from '../helpers/struct-fixtures.ts';
 
 for (const fixture of STRUCT_FIXTURES) {
-	describe(fixture.name, () => {
+	describe(fixture.name, { concurrent: false }, () => {
 		const { registry, payloads } = createStructFixture(fixture);
 		const decode = (bytes: Uint8Array) => registry.decode(fixture.name, bytes) as StructPayload;
 		// Warm the decoder outside timed steady-state decoding.

@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vite-plus/test';
+import { describe, test } from 'vite-plus/test';
 import { type ReadRecord, readRecords } from '../src/read-records.ts';
 import { ControlRecordType } from '../src/types.ts';
 
@@ -51,7 +51,7 @@ function buildDataRecord(entryId: number, timestamp: number, payload: Uint8Array
 
 describe('readRecords', () => {
 	describe('header parsing', () => {
-		test('reads header from minimal WPILOG file', async () => {
+		test('reads header from minimal WPILOG file', async ({ expect }) => {
 			const results = collectRecords(buildWpilog());
 
 			expect(results).toHaveLength(1);
@@ -61,7 +61,7 @@ describe('readRecords', () => {
 			});
 		});
 
-		test('reads header with extra header data', async () => {
+		test('reads header with extra header data', async ({ expect }) => {
 			const extraHeader = TEXT_ENCODER.encode('extra');
 			const magic = TEXT_ENCODER.encode('WPILOG');
 			const header = new Uint8Array([
@@ -80,7 +80,7 @@ describe('readRecords', () => {
 			});
 		});
 
-		test('rejects non-WPILOG files', () => {
+		test('rejects non-WPILOG files', ({ expect }) => {
 			const file = new Uint8Array([0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b]);
 
 			expect(() => {
@@ -92,7 +92,7 @@ describe('readRecords', () => {
 	});
 
 	describe('record header length bitfield', () => {
-		test('all lengths = 1 (0x00)', async () => {
+		test('all lengths = 1 (0x00)', async ({ expect }) => {
 			// entryId=1, payloadSize=0, timestamp=0
 			const record = new Uint8Array([0x00, 0x05, 0x00, 0x00]);
 			const results = collectRecords(buildWpilog(record));
@@ -106,7 +106,7 @@ describe('readRecords', () => {
 			}
 		});
 
-		test('timestampLength=3 (0x20)', async () => {
+		test('timestampLength=3 (0x20)', async ({ expect }) => {
 			// bitfield 0x20 = 0b00100000 => entryIdLength=1, payloadSizeLength=1, timestampLength=3
 			const record = new Uint8Array([0x20, 0x01, 0x00, 0x80, 0x00, 0x00]);
 			const results = collectRecords(buildWpilog(record));
@@ -121,7 +121,7 @@ describe('readRecords', () => {
 	});
 
 	describe('entry ID parsing', () => {
-		test('1-byte entry ID', async () => {
+		test('1-byte entry ID', async ({ expect }) => {
 			const record = buildDataRecord(42, 0, new Uint8Array(0));
 			const results = collectRecords(buildWpilog(record));
 
@@ -131,7 +131,7 @@ describe('readRecords', () => {
 			}
 		});
 
-		test('2-byte entry ID', async () => {
+		test('2-byte entry ID', async ({ expect }) => {
 			// bitfield: entryIdLength=2(0b01), payloadSizeLength=1(0b00), timestampLength=1(0b000) => 0x01
 			const record = new Uint8Array([0x01, 0x01, 0x00, 0x00, 0x00]);
 			const view = new DataView(record.buffer);
@@ -145,7 +145,7 @@ describe('readRecords', () => {
 			}
 		});
 
-		test('3-byte entry ID', async () => {
+		test('3-byte entry ID', async ({ expect }) => {
 			// bitfield: entryIdLength=3(0b10), payloadSizeLength=1(0b00), timestampLength=1(0b000) => 0x02
 			const record = new Uint8Array([0x02, 0x01, 0x00, 0x00, 0x00, 0x00]);
 			record[1] = 0x01; // byte0
@@ -160,7 +160,7 @@ describe('readRecords', () => {
 			}
 		});
 
-		test('4-byte entry ID', async () => {
+		test('4-byte entry ID', async ({ expect }) => {
 			// bitfield: entryIdLength=4(0b11), payloadSizeLength=1(0b00), timestampLength=1(0b000) => 0x03
 			const record = new Uint8Array([0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
 			const view = new DataView(record.buffer);
@@ -176,7 +176,7 @@ describe('readRecords', () => {
 	});
 
 	describe('control records', () => {
-		test('start control record', async () => {
+		test('start control record', async ({ expect }) => {
 			const entryName = TEXT_ENCODER.encode('test');
 			const entryType = TEXT_ENCODER.encode('double');
 			const entryMetadata = new Uint8Array(0);
@@ -228,7 +228,7 @@ describe('readRecords', () => {
 			});
 		});
 
-		test('finish control record', async () => {
+		test('finish control record', async ({ expect }) => {
 			const payloadSize = 1 + 4; // type + entryId
 			const payload = new Uint8Array(payloadSize);
 			const pView = new DataView(payload.buffer);
@@ -256,7 +256,7 @@ describe('readRecords', () => {
 			});
 		});
 
-		test('set metadata control record', async () => {
+		test('set metadata control record', async ({ expect }) => {
 			const metadata = TEXT_ENCODER.encode('meta');
 			const payloadSize = 1 + 4 + 4 + metadata.byteLength;
 			const payload = new Uint8Array(payloadSize);
@@ -294,7 +294,7 @@ describe('readRecords', () => {
 	});
 
 	describe('data records', () => {
-		test('reads data record payload', async () => {
+		test('reads data record payload', async ({ expect }) => {
 			const payload = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
 			const record = buildDataRecord(5, 100, payload);
 			const results = collectRecords(buildWpilog(record));
@@ -309,7 +309,7 @@ describe('readRecords', () => {
 			}
 		});
 
-		test('reads multiple records', async () => {
+		test('reads multiple records', async ({ expect }) => {
 			const record1 = buildDataRecord(1, 10, new Uint8Array([0x01]));
 			const record2 = buildDataRecord(2, 20, new Uint8Array([0x02]));
 			const results = collectRecords(buildWpilog(record1, record2));

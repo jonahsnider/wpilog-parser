@@ -1,8 +1,8 @@
-import { describe, expect, test } from 'vite-plus/test';
+import { describe, test } from 'vite-plus/test';
 import { type DecodedRecord, RecordType, isDataRecord } from '../src/types.ts';
 
 describe('isDataRecord', () => {
-	test('returns true for data records', () => {
+	test('returns true for data records', ({ expect }) => {
 		const record: DecodedRecord = {
 			entryId: 1,
 			timestamp: 0n,
@@ -14,7 +14,7 @@ describe('isDataRecord', () => {
 		expect(isDataRecord(record)).toBe(true);
 	});
 
-	test('returns false for control records', () => {
+	test('returns false for control records', ({ expect }) => {
 		const record: DecodedRecord = {
 			entryId: 0,
 			timestamp: 0n,
@@ -24,7 +24,7 @@ describe('isDataRecord', () => {
 		expect(isDataRecord(record)).toBe(false);
 	});
 
-	test('narrows type to access name field', () => {
+	test('narrows type to access name field', ({ expect }) => {
 		const record: DecodedRecord = {
 			entryId: 1,
 			timestamp: 0n,

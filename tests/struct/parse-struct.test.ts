@@ -1,10 +1,10 @@
-import { describe, expect, test } from 'vite-plus/test';
+import { describe, test } from 'vite-plus/test';
 import { parseStructSpecification } from '../../src/struct/parse-struct.ts';
 import { KnownStructTypeName } from '../../src/struct/types.ts';
 
 describe('parse struct specification', () => {
 	describe('standard declarations', () => {
-		test('bool value', () => {
+		test('bool value', ({ expect }) => {
 			expect(parseStructSpecification('bool value')).toStrictEqual([
 				{
 					name: 'value',
@@ -15,7 +15,7 @@ describe('parse struct specification', () => {
 				},
 			]);
 		});
-		test('double arr[4]', () => {
+		test('double arr[4]', ({ expect }) => {
 			expect(parseStructSpecification('double arr[4]')).toStrictEqual([
 				{
 					name: 'arr',
@@ -27,7 +27,7 @@ describe('parse struct specification', () => {
 			]);
 		});
 
-		test('enum {a=1, b=2} int8 val', () => {
+		test('enum {a=1, b=2} int8 val', ({ expect }) => {
 			expect(parseStructSpecification('enum {a=1, b=2} int8 val')).toStrictEqual([
 				{
 					name: 'val',
@@ -42,13 +42,13 @@ describe('parse struct specification', () => {
 			]);
 		});
 
-		test(';;; (empty structs)', () => {
+		test(';;; (empty structs)', ({ expect }) => {
 			expect(parseStructSpecification(';;;')).toStrictEqual([]);
 		});
 	});
 
 	describe('bit-field declarations', () => {
-		test('bool value : 1', () => {
+		test('bool value : 1', ({ expect }) => {
 			expect(parseStructSpecification('bool value : 1')).toStrictEqual([
 				{
 					name: 'value',
@@ -60,7 +60,7 @@ describe('parse struct specification', () => {
 			]);
 		});
 
-		test('enum{a=1,b=2}int8 value:2', () => {
+		test('enum{a=1,b=2}int8 value:2', ({ expect }) => {
 			expect(parseStructSpecification('enum{a=1,b=2}int8 value:2')).toStrictEqual([
 				{
 					name: 'value',
@@ -75,25 +75,25 @@ describe('parse struct specification', () => {
 			]);
 		});
 
-		test('double val:2 (must be integer or boolean)', () => {
+		test('double val:2 (must be integer or boolean)', ({ expect }) => {
 			expect(() => parseStructSpecification('double val:2')).toThrowError();
 		});
 
-		test('int32 val[2]:2 (cannot be array)', () => {
+		test('int32 val[2]:2 (cannot be array)', ({ expect }) => {
 			expect(() => parseStructSpecification('int32 val[2]:2')).toThrowError();
 		});
 
-		test('bool val:3 (bool must be 1 bit)', () => {
+		test('bool val:3 (bool must be 1 bit)', ({ expect }) => {
 			expect(() => parseStructSpecification('bool val:3')).toThrowError();
 		});
 
-		test('int16 val:17 (bit field larger than storage size)', () => {
+		test('int16 val:17 (bit field larger than storage size)', ({ expect }) => {
 			expect(() => parseStructSpecification('int16 val:17')).toThrowError();
 		});
 	});
 
 	describe('real world examples', () => {
-		test('ChassisSpeeds', () => {
+		test('ChassisSpeeds', ({ expect }) => {
 			expect(parseStructSpecification('double vx;double vy;double omega')).toStrictEqual([
 				{
 					name: 'vx',
@@ -119,7 +119,7 @@ describe('parse struct specification', () => {
 			]);
 		});
 
-		test('Pose2d', () => {
+		test('Pose2d', ({ expect }) => {
 			expect(parseStructSpecification('Translation2d translation;Rotation2d rotation')).toStrictEqual([
 				{
 					name: 'translation',
@@ -138,7 +138,7 @@ describe('parse struct specification', () => {
 			]);
 		});
 
-		test('SwerveDriveKinematics', () => {
+		test('SwerveDriveKinematics', ({ expect }) => {
 			expect(parseStructSpecification('Translation2d modules[4]')).toStrictEqual([
 				{
 					name: 'modules',

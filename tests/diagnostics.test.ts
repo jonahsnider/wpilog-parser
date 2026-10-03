@@ -2,12 +2,12 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Diagnostic } from 'nostics';
-import { expect, test } from 'vite-plus/test';
+import { test } from 'vite-plus/test';
 import { catalogFile, selectCatalogFormat } from '../src/cli/catalog.ts';
 import { parseDataLog } from '../src/decode-records.ts';
 import { parseStructSpecification } from '../src/struct/parse-struct.ts';
 
-test('parser errors have a stable code and actionable fix', () => {
+test('parser errors have a stable code and actionable fix', ({ expect }) => {
 	try {
 		Array.from(parseDataLog(new Uint8Array(0)));
 	} catch (error) {
@@ -22,7 +22,7 @@ test('parser errors have a stable code and actionable fix', () => {
 	throw new Error('Expected a parser diagnostic');
 });
 
-test('struct syntax diagnostics retain the parser errors as their cause', () => {
+test('struct syntax diagnostics retain the parser errors as their cause', ({ expect }) => {
 	try {
 		parseStructSpecification('int32');
 	} catch (error) {
@@ -33,7 +33,7 @@ test('struct syntax diagnostics retain the parser errors as their cause', () => 
 	throw new Error('Expected a struct syntax diagnostic');
 });
 
-test('CLI diagnostics retain file system errors as their cause', async () => {
+test('CLI diagnostics retain file system errors as their cause', async ({ expect }) => {
 	await expect(catalogFile('/nonexistent/wpilog-file.wpilog')).rejects.toMatchObject({
 		name: 'WPILOG_C0003',
 		cause: { code: 'ENOENT' },
@@ -41,7 +41,7 @@ test('CLI diagnostics retain file system errors as their cause', async () => {
 	expect(() => selectCatalogFormat({ json: true, csv: true })).toThrowError('Output flags cannot be combined');
 });
 
-test('CLI parser diagnostics point to the input file', async () => {
+test('CLI parser diagnostics point to the input file', async ({ expect }) => {
 	const directory = await mkdtemp(join(tmpdir(), 'wpilog-parser-'));
 	const filePath = join(directory, 'invalid.wpilog');
 	try {

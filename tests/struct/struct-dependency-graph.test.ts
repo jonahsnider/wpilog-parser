@@ -1,8 +1,8 @@
-import { describe, expect, test } from 'vite-plus/test';
+import { describe, test } from 'vite-plus/test';
 import { StructDependencyGraph } from '../../src/struct/struct-dependency-graph.ts';
 
 describe('struct dependency graph', () => {
-	test('replaces old dependencies when a schema changes', () => {
+	test('replaces old dependencies when a schema changes', ({ expect }) => {
 		const graph = new StructDependencyGraph();
 		graph.registerSchema('A', ['B']);
 		graph.registerSchema('B', []);
@@ -10,7 +10,7 @@ describe('struct dependency graph', () => {
 		graph.registerSchema('B', ['A']);
 		expect(graph.getDependencies('B')).toStrictEqual(new Set(['B', 'A']));
 	});
-	test('A', () => {
+	test('A', ({ expect }) => {
 		const graph = new StructDependencyGraph();
 		graph.registerSchema('MyStruct', []);
 
@@ -18,7 +18,7 @@ describe('struct dependency graph', () => {
 		expect(dependencies).toStrictEqual(new Set(['MyStruct']));
 	});
 
-	test('A -> B', () => {
+	test('A -> B', ({ expect }) => {
 		const graph = new StructDependencyGraph();
 		graph.registerSchema('MyStruct', ['InnerStruct']);
 
@@ -26,7 +26,7 @@ describe('struct dependency graph', () => {
 		expect(dependencies).toStrictEqual(new Set(['MyStruct', 'InnerStruct']));
 	});
 
-	test('A -> B -> C', () => {
+	test('A -> B -> C', ({ expect }) => {
 		const graph = new StructDependencyGraph();
 		graph.registerSchema('A', ['B']);
 		graph.registerSchema('B', ['C']);
@@ -35,14 +35,14 @@ describe('struct dependency graph', () => {
 		expect(dependencies).toStrictEqual(new Set(['A', 'B', 'C']));
 	});
 
-	test('A -> B -> C -> A (circular dependency)', () => {
+	test('A -> B -> C -> A (circular dependency)', ({ expect }) => {
 		const graph = new StructDependencyGraph();
 		graph.registerSchema('A', ['B']);
 		graph.registerSchema('B', ['C']);
 		expect(() => graph.registerSchema('C', ['A'])).toThrowError();
 	});
 
-	test('A -> B, A -> C, C -> D, B -> C', () => {
+	test('A -> B, A -> C, C -> D, B -> C', ({ expect }) => {
 		const graph = new StructDependencyGraph();
 		graph.registerSchema('A', ['B', 'C']);
 		expect(graph.getDependencies('A')).toStrictEqual(new Set(['A', 'B', 'C']));

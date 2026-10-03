@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vite-plus/test';
+import { describe, test } from 'vite-plus/test';
 import { catalogEntries } from '../src/catalog.ts';
 import { readRecords } from '../src/read-records.ts';
 import { ControlRecordType } from '../src/types.ts';
@@ -53,7 +53,7 @@ function buildStartControlRecord(entryId: number, name: string, type: string, me
 }
 
 describe('catalogEntries', () => {
-	test('collects start control records', () => {
+	test('collects start control records', ({ expect }) => {
 		const wpilog = buildWpilog(
 			buildStartControlRecord(1, 'Robot/Pose', 'struct:Pose2d', ''),
 			buildStartControlRecord(2, 'DS:enabled', 'boolean', ''),
@@ -67,7 +67,7 @@ describe('catalogEntries', () => {
 		]);
 	});
 
-	test('returns empty array for file with no entries', () => {
+	test('returns empty array for file with no entries', ({ expect }) => {
 		const wpilog = buildWpilog();
 		const catalog = Array.from(catalogEntries(readRecords(wpilog)));
 		expect(catalog).toStrictEqual([]);

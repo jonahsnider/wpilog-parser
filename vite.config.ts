@@ -5,6 +5,7 @@ export default defineConfig({
 	plugins: [codSpeedPlugin()],
 	test: {
 		isolate: false,
+		sequence: { concurrent: true },
 		benchmark: {
 			include: ['tests/benchmarks/**/*.bench.ts'],
 		},

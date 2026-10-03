@@ -25,6 +25,9 @@ for (const record of parseDataLog(bytes)) {
 
 Use `readRecords()` and `decodeRecords()` separately when you need access to raw records or want to transform the record stream before decoding it. Both approaches produce the same decoded records.
 
+Struct schemas are compiled lazily into reusable decoders, and struct payloads are returned as `Map` values.
+In environments where Content Security Policy blocks runtime code generation, structs are decoded by the interpreter automatically.
+
 ## CLI
 
 List every entry available in a log before writing an analysis script:

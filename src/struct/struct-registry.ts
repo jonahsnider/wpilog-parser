@@ -2,6 +2,7 @@ import { ByteOffset } from '../byte-offset.ts';
 import { diagnostics } from '../diagnostics.ts';
 import type { StructPayload } from '../types.ts';
 import { BitFieldTracker, decodeBitField } from './bit-field.ts';
+import { allowsCodeGeneration, compileStruct, type CompiledStructDecoder } from './compile-struct.ts';
 import { parseStructSpecification } from './parse-struct.ts';
 import type { StructDecodeQueue } from './struct-decode-queue.ts';
 import { KnownStructTypeName, type StructDeclaration, type StructSpecification } from './types.ts';
@@ -12,6 +13,8 @@ export class StructRegistry {
 	private static readonly TEXT_DECODER = new TextDecoder('utf-8');
 	private readonly definitions = new Map<string, StructSpecification>();
 	private readonly byteLengths = new Map<string, number>();
+	private readonly decoders = new Map<string, CompiledStructDecoder>();
+	private codeGenerationAllowed?: boolean;
 	private readonly structDecodeQueue: StructDecodeQueue;
 
 	constructor(structDecodeQueue: StructDecodeQueue) {
@@ -21,6 +24,11 @@ export class StructRegistry {
 	register(name: string, definition: string): void {
 		const specification = parseStructSpecification(definition);
 
+		if (this.definitions.has(name) && this.definitions.get(name) !== specification) {
+			// A changed schema can affect the layout of any enclosing struct.
+			this.byteLengths.clear();
+			this.decoders.clear();
+		}
 		this.definitions.set(name, specification);
 		this.structDecodeQueue.registerSchema(
 			name,
@@ -46,13 +54,21 @@ export class StructRegistry {
 			return structByteLengthOrBlocker;
 		}
 
+		if (structByteLengthOrBlocker === 0) {
+			if (payload.byteLength === 0) return [];
+			throw new RangeError('Cannot decode an array of zero-length structs');
+		}
 		const elements = payload.byteLength / structByteLengthOrBlocker;
 		const offset = new ByteOffset();
+		const decoder = this.getDecoder(structNameWithoutSuffix);
+		const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
 
 		const result: StructPayload[] = [];
 
 		for (let i = 0; i < elements; i++) {
-			const decoded = this.decode(structNameWithoutSuffix, payload, offset);
+			const decoded = decoder
+				? decoder(view, payload, i * structByteLengthOrBlocker)
+				: this.decodeInterpreted(structNameWithoutSuffix, payload, offset);
 			if (typeof decoded === 'string') {
 				throw new TypeError(
 					`Expected struct ${structNameWithoutSuffix} to be defined if the byte length calculation succeeded`,
@@ -64,7 +80,39 @@ export class StructRegistry {
 		return result;
 	}
 
-	decode(structName: string, payload: Uint8Array, offset = new ByteOffset()): StructPayload | string {
+	decode(structName: string, payload: Uint8Array, offset?: ByteOffset): StructPayload | string {
+		const byteLength = this.getByteLength(structName);
+		if (typeof byteLength === 'string') return byteLength;
+		const decoder = this.getDecoder(structName);
+		if (!decoder) return this.decodeInterpreted(structName, payload, offset);
+
+		const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
+		const result = decoder(view, payload, offset?.get() ?? 0);
+		offset?.advance(byteLength);
+		return result;
+	}
+
+	private getDecoder(name: string): CompiledStructDecoder | undefined {
+		this.codeGenerationAllowed ??= allowsCodeGeneration();
+		if (!this.codeGenerationAllowed) return undefined;
+
+		const existing = this.decoders.get(name);
+		if (existing) return existing;
+
+		try {
+			const decoder = compileStruct(this, name);
+			this.decoders.set(name, decoder);
+			return decoder;
+		} catch (error) {
+			// Also handle a policy change between the probe and compilation.
+			if (!(error instanceof EvalError)) throw error;
+			this.codeGenerationAllowed = false;
+			return undefined;
+		}
+	}
+
+	/** Decode without runtime code generation, including in CSP-restricted environments. */
+	decodeInterpreted(structName: string, payload: Uint8Array, offset = new ByteOffset()): StructPayload | string {
 		if (!this.definitions.has(structName)) {
 			return structName;
 		}
@@ -251,7 +299,7 @@ export class StructRegistry {
 					if (member.arraySize !== undefined) {
 						const array: StructPayload[] = [];
 						for (let i = 0; i < member.arraySize; i++) {
-							const decoded = this.decode(member.value, payload, offset);
+							const decoded = this.decodeInterpreted(member.value, payload, offset);
 							if (typeof decoded === 'string') {
 								return decoded;
 							}
@@ -259,7 +307,7 @@ export class StructRegistry {
 						}
 						result.set(member.name, array);
 					} else {
-						const decoded = this.decode(member.value, payload, offset);
+						const decoded = this.decodeInterpreted(member.value, payload, offset);
 						if (typeof decoded === 'string') {
 							return decoded;
 						}
@@ -274,6 +322,7 @@ export class StructRegistry {
 	}
 
 	getByteLength(name: string): number | string {
+		if (!this.definitions.has(name)) return name;
 		const existing = this.byteLengths.get(name);
 
 		if (existing !== undefined) {

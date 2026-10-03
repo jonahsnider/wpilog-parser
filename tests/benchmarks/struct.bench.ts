@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vite-plus/test';
 import { structPayloadToJson } from '../../src/struct-payload-to-json.ts';
+import { compileStruct } from '../../src/struct/compile-struct.ts';
 import type { StructPayload } from '../../src/types.ts';
 import { createStructFixture, STRUCT_FIXTURES } from '../helpers/struct-fixtures.ts';
 
@@ -18,6 +19,14 @@ for (const fixture of STRUCT_FIXTURES) {
 				bench('Map → object', () => (decoded = payloads.map((bytes) => structPayloadToJson(decode(bytes))))),
 			);
 			expect(decoded).toHaveLength(payloads.length);
+		});
+
+		// Repeated source may benefit from the engine's compilation cache.
+		test('compile registered schema', async ({ bench }) => {
+			let decoder = compileStruct(registry, fixture.name);
+			await bench('compile Map decoder', () => (decoder = compileStruct(registry, fixture.name))).run();
+			const bytes = payloads[0]!;
+			expect(decoder(new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), bytes, 0)).toBeInstanceOf(Map);
 		});
 	});
 }

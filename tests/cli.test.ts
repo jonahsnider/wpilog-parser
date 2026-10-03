@@ -21,7 +21,7 @@ describe('formatCatalog', () => {
 		expect(formatCatalog(ENTRIES, 'json')).toBe(JSON.stringify(ENTRIES, null, 2));
 	});
 
-	test.each(['jsonl', 'ndjson'] as const)('formats %s', (format) => {
+	test.for(['jsonl', 'ndjson'] as const)('formats %s', (format) => {
 		expect(formatCatalog(ENTRIES, format)).toBe(ENTRIES.map((entry) => JSON.stringify(entry)).join('\n'));
 	});
 

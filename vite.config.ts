@@ -4,6 +4,7 @@ import { defineConfig } from 'vite-plus';
 export default defineConfig({
 	plugins: [codSpeedPlugin()],
 	test: {
+		isolate: false,
 		benchmark: {
 			include: ['tests/benchmarks/**/*.bench.ts'],
 		},

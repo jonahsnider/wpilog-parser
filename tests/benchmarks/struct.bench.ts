@@ -8,15 +8,20 @@ for (const fixture of STRUCT_FIXTURES) {
 	describe(fixture.name, { concurrent: false }, () => {
 		const { registry, payloads } = createStructFixture(fixture);
 		const decode = (bytes: Uint8Array) => registry.decode(fixture.name, bytes) as StructPayload;
-		// Warm the decoder outside timed steady-state decoding.
+		const interpreted = (bytes: Uint8Array) => registry.decodeInterpreted(fixture.name, bytes) as StructPayload;
+		// Warm both decoders outside timed steady-state decoding.
 		decode(payloads[0]!);
+		interpreted(payloads[0]!);
 
 		test('decode 32 struct payloads (schemas already registered)', async ({ bench }) => {
 			// Keep the decoded values observable to prevent dead-code elimination.
 			let decoded: object[] = [];
 			await bench.compare(
 				bench('Map', () => (decoded = payloads.map(decode))),
+				bench('interpreted Map', () => (decoded = payloads.map(interpreted))),
 				bench('Map → object', () => (decoded = payloads.map((bytes) => structPayloadToJson(decode(bytes))))),
+				bench('interpreted Map → object', () =>
+					(decoded = payloads.map((bytes) => structPayloadToJson(interpreted(bytes))))),
 			);
 			expect(decoded).toHaveLength(payloads.length);
 		});

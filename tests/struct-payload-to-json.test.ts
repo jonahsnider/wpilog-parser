@@ -5,6 +5,36 @@ import type { StructPayload } from '../src/types.ts';
 type StructPayloadValue = StructPayload extends Map<unknown, infer V> ? V : never;
 
 describe('struct payload to JSON', () => {
+	test.for([
+		{ name: 'scalar', value: 42, expected: 42 },
+		{
+			name: 'nested struct',
+			value: new Map([['__proto__', new Map([['value', 7]])]]),
+			expected: { ['__proto__']: { value: 7 } },
+		},
+		{
+			name: 'struct array',
+			value: [new Map([['__proto__', new Map([['value', 7]])]])],
+			expected: [{ ['__proto__']: { value: 7 } }],
+		},
+	])('preserves arbitrary keys for $name values', ({ value, expected }, { expect }) => {
+		const payload: StructPayload = new Map<string, StructPayloadValue>([
+			['__proto__', value],
+			['constructor', 2],
+			['hasOwnProperty', 3],
+		]);
+		const converted = structPayloadToJson(payload);
+		expect(converted).toStrictEqual({ ['__proto__']: expected, constructor: 2, hasOwnProperty: 3 });
+		expect(Object.getPrototypeOf(converted)).toBe(Object.prototype);
+		expect(Object.getOwnPropertyDescriptor(converted, '__proto__')).toEqual({
+			value: expected,
+			enumerable: true,
+			writable: true,
+			configurable: true,
+		});
+		expect(JSON.parse(JSON.stringify(converted))).toStrictEqual(converted);
+	});
+
 	test('Translation2d', ({ expect }) => {
 		const payload: StructPayload = new Map([
 			['x', 1.0],

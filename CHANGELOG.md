@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.5.0](https://github.com/jonahsnider/wpilog-parser/compare/v2.4.1...v2.5.0) (2026-10-08)
+
+
+### Features
+
+* report CLI status with OSC 7501 ([8533227](https://github.com/jonahsnider/wpilog-parser/commit/8533227569f83fe57c554f1d4867302d881a5dc5))
+
+
+### Bug Fixes
+
+* fix struct fields named __proto__ in structPayloadToJson ([6a1baf2](https://github.com/jonahsnider/wpilog-parser/commit/6a1baf25b67f677df6d8a8b003dafa5649d9eaf7))
+* replace dependencies when struct schemas change ([76d4bf9](https://github.com/jonahsnider/wpilog-parser/commit/76d4bf9ec41019b134803e8d6a8068ffbba22839))
+
+
+### Performance Improvements
+
+* improve struct parsing by compiling decoders for struct schemas ([a6f827e](https://github.com/jonahsnider/wpilog-parser/commit/a6f827ea3bfbe62272d45efc8ca4ad6a7350c75b))
+
 ## [2.4.1](https://github.com/jonahsnider/wpilog-parser/compare/v2.4.0...v2.4.1) (2026-09-29)
 
 

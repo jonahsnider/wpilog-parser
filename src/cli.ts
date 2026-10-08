@@ -2,6 +2,7 @@
 
 import { cac } from 'cac';
 import { Diagnostic, formatDiagnostic } from 'nostics';
+import oscStatus from 'osc-status';
 import packageJson from '../package.json' with { type: 'json' };
 import { catalogFile, type CatalogOutputOptions, formatCatalog, selectCatalogFormat } from './cli/catalog.ts';
 import { diagnostics } from './diagnostics.ts';
@@ -17,8 +18,10 @@ cli
 	.example('wpilog catalog ./example.wpilog --json')
 	.action(async (file: string, options: CatalogOutputOptions) => {
 		const format = selectCatalogFormat(options);
+		oscStatus.working({ app: 'wpilog', message: 'Cataloging log' });
 		const entries = await catalogFile(file);
 		console.log(formatCatalog(entries, format));
+		oscStatus.done({ app: 'wpilog', message: `Cataloged ${entries.length} entries` });
 	});
 
 cli.help();
@@ -39,4 +42,5 @@ try {
 		error instanceof Diagnostic ? formatDiagnostic(error) : error instanceof Error ? error.message : String(error);
 	console.error(error instanceof Diagnostic ? message : `wpilog: ${message}`);
 	process.exitCode = 1;
+	oscStatus.error({ app: 'wpilog', message: 'Command failed' });
 }

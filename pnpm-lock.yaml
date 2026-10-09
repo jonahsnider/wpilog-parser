@@ -181,7 +181,7 @@ importers:
     dependencies:
       '@toon-format/toon':
         specifier: ^4.1.1
-        version: 4.1.1
+        version: 4.4.0
       cac:
         specifier: ^7.0.0
         version: 7.0.0
@@ -720,8 +720,8 @@ packages:
     peerDependencies:
       '@testing-library/dom': '>=7.21.4'
 
-  '@toon-format/toon@4.1.1':
-    resolution: {integrity: sha512-SGCkS7IjVpwRmGPgnY8ENKpAf0EdAnZDOQkvFW0d2cgOpdn9FEFl7sTgryESyypXrWr0YajHGpwsAUX4zw9ZvA==}
+  '@toon-format/toon@4.4.0':
+    resolution: {integrity: sha512-A6UcsVoWbNdhdLNhJbe6JpRlocmf/DZGG57fur3bd8oQtsjBaKWo2hHbOU2zTuy+byUmLIOyP1xJeitopCZzpQ==}
 
   '@types/aria-query@5.0.4':
     resolution: {integrity: sha512-rfT93uj5s0PRL7EzccGMs3brplhcrghnDoV26NqKhCAS1hVo+WdNsPvE/yb6ilfr5hi2MEk6d5EWJTKdxg8jVw==}
@@ -2026,7 +2026,7 @@ snapshots:
     dependencies:
       '@testing-library/dom': 10.4.1
 
-  '@toon-format/toon@4.1.1': {}
+  '@toon-format/toon@4.4.0': {}
 
   '@types/aria-query@5.0.4': {}
 

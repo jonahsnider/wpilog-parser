@@ -47,7 +47,7 @@
 		"osc-status": "^1.0.0"
 	},
 	"devDependencies": {
-		"@codspeed/vitest-plugin": "5.7.1",
+		"@codspeed/vitest-plugin": "6.1.0",
 		"@types/node": "26.6.5",
 		"@typescript/native-preview": "7.0.0-dev.20260707.2",
 		"typescript": "7.0.2",

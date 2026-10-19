@@ -44,16 +44,29 @@ npx wpilog-parser catalog ./example.wpilog --json
 
 ## Agent skill
 
-This package ships an [Agent Skill](https://agentskills.io) at `skills/analyze-wpilog/SKILL.md` that teaches AI coding agents how to use the library. Install it into your project with either:
+This package ships an [Agent Skill](https://agentskills.io) at `skills/analyze-wpilog/SKILL.md` that teaches AI coding agents how to use the library.
+It allows agents to analyze robot log files themselves, and create reports or insights based on the data stored in the WPILOG.
+
+You can also install the skill with:
 
 ```sh
 # https://skills.sh/
 npx skills add jonahsnider/wpilog-parser
 ```
 
+With [pnpm 12.11.0 or later](https://pnpm.io/agent-skills), install the package and approve its skill:
+
 ```sh
-# https://github.com/antfu/skills-npm
-npx skills-npm
+pnpm add wpilog-parser
+pnpm approve
+```
+
+Approving skills for `wpilog-parser` records the following in your project's `pnpm-workspace.yaml`:
+
+```yaml
+permissions:
+  wpilog-parser:
+    skills: true
 ```
 
 ## Development

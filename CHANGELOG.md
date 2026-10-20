@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.0.0](https://github.com/jonahsnider/wpilog-parser/compare/v2.5.0...v3.0.0) (2026-10-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* return struct payloads as plain objects ([#63](https://github.com/jonahsnider/wpilog-parser/issues/63))
+
+### Features
+
+* return struct payloads as plain objects ([#63](https://github.com/jonahsnider/wpilog-parser/issues/63)) ([79567a1](https://github.com/jonahsnider/wpilog-parser/commit/79567a1d5ed5c2a12cfbe7f0e6a0eade2cc42755))
+
 ## [2.5.0](https://github.com/jonahsnider/wpilog-parser/compare/v2.4.1...v2.5.0) (2026-10-19)
 
 

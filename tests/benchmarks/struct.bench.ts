@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'vite-plus/test';
-import { structPayloadToJson } from '../../src/struct-payload-to-json.ts';
 import { compileStruct } from '../../src/struct/compile-struct.ts';
 import type { StructPayload } from '../../src/types.ts';
 import { createStructFixture, STRUCT_FIXTURES } from '../helpers/struct-fixtures.ts';
@@ -17,11 +16,8 @@ for (const fixture of STRUCT_FIXTURES) {
 			// Keep the decoded values observable to prevent dead-code elimination.
 			let decoded: object[] = [];
 			await bench.compare(
-				bench('Map', () => (decoded = payloads.map(decode))),
-				bench('interpreted Map', () => (decoded = payloads.map(interpreted))),
-				bench('Map → object', () => (decoded = payloads.map((bytes) => structPayloadToJson(decode(bytes))))),
-				bench('interpreted Map → object', () =>
-					(decoded = payloads.map((bytes) => structPayloadToJson(interpreted(bytes))))),
+				bench('object', () => (decoded = payloads.map(decode))),
+				bench('interpreted object', () => (decoded = payloads.map(interpreted))),
 			);
 			expect(decoded).toHaveLength(payloads.length);
 		});
@@ -29,9 +25,11 @@ for (const fixture of STRUCT_FIXTURES) {
 		// Repeated source may benefit from the engine's compilation cache.
 		test('compile registered schema', async ({ bench }) => {
 			let decoder = compileStruct(registry, fixture.name);
-			await bench('compile Map decoder', () => (decoder = compileStruct(registry, fixture.name))).run();
+			await bench('compile object decoder', () => (decoder = compileStruct(registry, fixture.name))).run();
 			const bytes = payloads[0]!;
-			expect(decoder(new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), bytes, 0)).toBeInstanceOf(Map);
+			expect(
+				Object.getPrototypeOf(decoder(new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), bytes, 0)),
+			).toBe(Object.prototype);
 		});
 	});
 }

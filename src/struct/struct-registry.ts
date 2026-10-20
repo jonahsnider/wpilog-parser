@@ -118,17 +118,26 @@ export class StructRegistry {
 		}
 
 		const specification = this.getDefinition(structName);
-		const result: StructPayload = new Map();
+		const result: StructPayload = {};
 
 		const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
 		const bitFields = new BitFieldTracker();
 
 		for (const member of specification) {
+			// Define this field before assignment so the inherited setter is never invoked.
+			if (member.name === '__proto__') {
+				Object.defineProperty(result, member.name, {
+					value: undefined,
+					enumerable: true,
+					writable: true,
+					configurable: true,
+				});
+			}
 			const memberByteLength = this.calculateByteLength(member);
 			const bitField = typeof memberByteLength === 'number' ? bitFields.next(member, memberByteLength) : undefined;
 			if (bitField) {
 				offset.advance(bitField.bytesToAdvance);
-				result.set(member.name, decodeBitField(view, offset.get(), member, bitField));
+				result[member.name] = decodeBitField(view, offset.get(), member, bitField);
 				continue;
 			}
 
@@ -142,9 +151,9 @@ export class StructRegistry {
 							array.push(Boolean(view.getUint8(offset.get())));
 							offset.advance8();
 						}
-						result.set(member.name, array);
+						result[member.name] = array;
 					} else {
-						result.set(member.name, Boolean(view.getUint8(offset.get())));
+						result[member.name] = Boolean(view.getUint8(offset.get()));
 						offset.advance8();
 					}
 					break;
@@ -155,9 +164,9 @@ export class StructRegistry {
 							array.push(view.getInt8(offset.get()));
 							offset.advance8();
 						}
-						result.set(member.name, array);
+						result[member.name] = array;
 					} else {
-						result.set(member.name, view.getInt8(offset.get()));
+						result[member.name] = view.getInt8(offset.get());
 						offset.advance8();
 					}
 					break;
@@ -168,9 +177,9 @@ export class StructRegistry {
 							array.push(view.getInt16(offset.get(), true));
 							offset.advance16();
 						}
-						result.set(member.name, array);
+						result[member.name] = array;
 					} else {
-						result.set(member.name, view.getInt16(offset.get(), true));
+						result[member.name] = view.getInt16(offset.get(), true);
 						offset.advance16();
 					}
 					break;
@@ -181,9 +190,9 @@ export class StructRegistry {
 							array.push(view.getInt32(offset.get(), true));
 							offset.advance32();
 						}
-						result.set(member.name, array);
+						result[member.name] = array;
 					} else {
-						result.set(member.name, view.getInt32(offset.get(), true));
+						result[member.name] = view.getInt32(offset.get(), true);
 						offset.advance32();
 					}
 					break;
@@ -194,9 +203,9 @@ export class StructRegistry {
 							array.push(view.getBigInt64(offset.get(), true));
 							offset.advance64();
 						}
-						result.set(member.name, array);
+						result[member.name] = array;
 					} else {
-						result.set(member.name, view.getBigInt64(offset.get(), true));
+						result[member.name] = view.getBigInt64(offset.get(), true);
 						offset.advance64();
 					}
 					break;
@@ -207,9 +216,9 @@ export class StructRegistry {
 							array.push(view.getUint8(offset.get()));
 							offset.advance8();
 						}
-						result.set(member.name, array);
+						result[member.name] = array;
 					} else {
-						result.set(member.name, view.getUint8(offset.get()));
+						result[member.name] = view.getUint8(offset.get());
 						offset.advance8();
 					}
 					break;
@@ -220,9 +229,9 @@ export class StructRegistry {
 							array.push(view.getUint16(offset.get(), true));
 							offset.advance16();
 						}
-						result.set(member.name, array);
+						result[member.name] = array;
 					} else {
-						result.set(member.name, view.getUint16(offset.get(), true));
+						result[member.name] = view.getUint16(offset.get(), true);
 						offset.advance16();
 					}
 					break;
@@ -233,9 +242,9 @@ export class StructRegistry {
 							array.push(view.getUint32(offset.get(), true));
 							offset.advance32();
 						}
-						result.set(member.name, array);
+						result[member.name] = array;
 					} else {
-						result.set(member.name, view.getUint32(offset.get(), true));
+						result[member.name] = view.getUint32(offset.get(), true);
 						offset.advance32();
 					}
 					break;
@@ -246,9 +255,9 @@ export class StructRegistry {
 							array.push(view.getBigUint64(offset.get(), true));
 							offset.advance64();
 						}
-						result.set(member.name, array);
+						result[member.name] = array;
 					} else {
-						result.set(member.name, view.getBigUint64(offset.get(), true));
+						result[member.name] = view.getBigUint64(offset.get(), true);
 						offset.advance64();
 					}
 					break;
@@ -260,9 +269,9 @@ export class StructRegistry {
 							array.push(view.getFloat32(offset.get(), true));
 							offset.advance32();
 						}
-						result.set(member.name, array);
+						result[member.name] = array;
 					} else {
-						result.set(member.name, view.getFloat32(offset.get(), true));
+						result[member.name] = view.getFloat32(offset.get(), true);
 						offset.advance32();
 					}
 					break;
@@ -274,24 +283,20 @@ export class StructRegistry {
 							array.push(view.getFloat64(offset.get(), true));
 							offset.advance64();
 						}
-						result.set(member.name, array);
+						result[member.name] = array;
 					} else {
-						result.set(member.name, view.getFloat64(offset.get(), true));
+						result[member.name] = view.getFloat64(offset.get(), true);
 						offset.advance64();
 					}
 					break;
 				case KnownStructTypeName.Character:
 					if (member.arraySize !== undefined) {
-						result.set(
-							member.name,
-							StructRegistry.TEXT_DECODER.decode(
-								payload.subarray(offset.get(), offset.advance(member.arraySize).get()),
-							),
+						result[member.name] = StructRegistry.TEXT_DECODER.decode(
+							payload.subarray(offset.get(), offset.advance(member.arraySize).get()),
 						);
 					} else {
-						result.set(
-							member.name,
-							StructRegistry.TEXT_DECODER.decode(payload.subarray(offset.get(), offset.advance8().get())),
+						result[member.name] = StructRegistry.TEXT_DECODER.decode(
+							payload.subarray(offset.get(), offset.advance8().get()),
 						);
 					}
 					break;
@@ -305,13 +310,13 @@ export class StructRegistry {
 							}
 							array.push(decoded);
 						}
-						result.set(member.name, array);
+						result[member.name] = array;
 					} else {
 						const decoded = this.decodeInterpreted(member.value, payload, offset);
 						if (typeof decoded === 'string') {
 							return decoded;
 						}
-						result.set(member.name, decoded);
+						result[member.name] = decoded;
 					}
 				}
 			}

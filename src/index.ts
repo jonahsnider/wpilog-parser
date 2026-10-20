@@ -15,7 +15,6 @@ export {
 	RecordType,
 	type StructPayload,
 } from './types.ts';
-export { structPayloadToJson } from './struct-payload-to-json.ts';
 export { catalogEntries, type CatalogEntry } from './catalog.ts';
 export { parseStructSpecification } from './struct/parse-struct.ts';
 export {

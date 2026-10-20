@@ -42,11 +42,11 @@ for (const record of parseDataLog(bytes)) {
 ### Decoding structs
 
 ```ts
-import { parseDataLog, RecordType, structPayloadToJson } from 'wpilog-parser';
+import { parseDataLog, RecordType } from 'wpilog-parser';
 
 for (const record of parseDataLog(bytes)) {
 	if (record.type === RecordType.Struct && record.name === '/Robot/Localization/EstimatedPose') {
-		console.log(record.timestamp, structPayloadToJson(record.payload));
+		console.log(record.timestamp, record.payload);
 		// 18688018n {
 		//   translation: { x: 10.289, y: 0.47 },
 		//   rotation: { value: 1.5707961072652017 },

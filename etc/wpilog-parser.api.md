@@ -221,10 +221,9 @@ export type StructDeclaration = {
 };
 
 // @public
-export type StructPayload = Map<string, number | boolean | bigint | string | StructPayload | number[] | boolean[] | bigint[] | StructPayload[]>;
-
-// @public
-export function structPayloadToJson(payload: StructPayload): object;
+export type StructPayload = {
+    [key: string]: number | boolean | bigint | string | StructPayload | number[] | boolean[] | bigint[] | StructPayload[] | undefined;
+};
 
 // @public (undocumented)
 export type StructSpecification = StructDeclaration[];

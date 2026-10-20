@@ -35,14 +35,14 @@ describe('parseDataLog', () => {
 			return [{ name: record.name, payload: record.payload }];
 		});
 
-		const expectedPayload = new Map<string, bigint | boolean>([
-			['opModeHash', 0n],
-			['robotMode', 0n],
-			['enabled', false],
-			['eStop', false],
-			['fmsAttached', false],
-			['dsAttached', false],
-		]);
+		const expectedPayload = {
+			opModeHash: 0n,
+			robotMode: 0n,
+			enabled: false,
+			eStop: false,
+			fmsAttached: false,
+			dsAttached: false,
+		};
 		expect(controlWords).toStrictEqual([
 			{ name: '/NT:/DriverStation/ControlWord', payload: expectedPayload },
 			{ name: '/DS:controlWord', payload: expectedPayload },

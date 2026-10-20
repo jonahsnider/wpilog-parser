@@ -9,17 +9,23 @@ test.for(LOG_FIXTURES)(
 	'$name decodes identically when V8 forbids string code generation',
 	async ({ filePath }, { expect }) => {
 		const parserUrl = new URL('../../src/index.ts', import.meta.url).href;
-		// Hash streamed records to compare every value, including Maps and bigint,
-		// without retaining a whole decoded log in memory.
+		// Hash streamed values without retaining a whole decoded log in memory.
+		// V8 serialization can encode equal numbers differently depending on object
+		// layout. Tag bigint and special numbers to compare their values consistently.
 		const source = `
 		import { readFileSync } from 'node:fs';
 		import { createHash } from 'node:crypto';
-		import { serialize } from 'node:v8';
 		import { parseDataLog, RecordType } from ${JSON.stringify(parserUrl)};
 		const hash = createHash('sha256');
 		let structs = 0;
 		for (const record of parseDataLog(readFileSync(${JSON.stringify(filePath)}))) {
-			hash.update(serialize(record));
+			hash.update(JSON.stringify(record, (_key, value) => {
+				if (typeof value === 'bigint') return { $bigint: value.toString() };
+				if (typeof value === 'number' && (!Number.isFinite(value) || Object.is(value, -0))) {
+					return { $number: Object.is(value, -0) ? '-0' : String(value) };
+				}
+				return value;
+			}));
 			if (record.type === RecordType.Struct || record.type === RecordType.StructArray) structs++;
 		}
 		console.log(JSON.stringify({ digest: hash.digest('hex'), structs }));

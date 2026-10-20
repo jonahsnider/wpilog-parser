@@ -43,6 +43,6 @@ export default defineConfig({
 		singleQuote: true,
 		useTabs: true,
 		printWidth: 120,
-		ignorePatterns: ['CHANGELOG.md'],
+		ignorePatterns: ['CHANGELOG.md', 'etc/*.api.md'],
 	},
 });

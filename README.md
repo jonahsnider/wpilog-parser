@@ -28,6 +28,8 @@ Use `readRecords()` and `decodeRecords()` separately when you need access to raw
 Struct schemas are compiled lazily into reusable decoders, and struct payloads are returned as `Map` values.
 In environments where Content Security Policy blocks runtime code generation, structs are decoded by the interpreter automatically.
 
+A summary of the full API is available in [wpilog-parser.api.md](./etc/wpilog-parser.api.md).
+
 ## CLI
 
 List every entry available in a log before writing an analysis script:

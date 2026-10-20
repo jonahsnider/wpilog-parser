@@ -10,10 +10,10 @@ export const KnownStructTypeName = {
 	Uint32: 'uint32',
 	Uint64: 'uint64',
 	Float32: 'float32',
-	/** Equivalent to {@link KnownStructTypeName.Float32} */
+	/** Equivalent to {@link (KnownStructTypeName:variable).Float32} */
 	Float: 'float',
 	Float64: 'float64',
-	/** Equivalent to {@link KnownStructTypeName.Float64} */
+	/** Equivalent to {@link (KnownStructTypeName:variable).Float64} */
 	Double: 'double',
 } as const;
 

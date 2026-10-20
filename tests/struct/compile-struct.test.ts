@@ -1,6 +1,5 @@
 import type { StructPayload } from '../../src/types.ts';
 import { describe, expect, test, vi } from 'vite-plus/test';
-import { structPayloadToJson } from '../../src/struct-payload-to-json.ts';
 import { StructDecodeQueue } from '../../src/struct/struct-decode-queue.ts';
 import { StructRegistry } from '../../src/struct/struct-registry.ts';
 import { compileStruct } from '../../src/struct/compile-struct.ts';
@@ -75,7 +74,7 @@ describe('compiled struct decoder', { concurrent: false }, () => {
 			values: [-2, 3],
 			empty: [],
 		};
-		expect(structPayloadToJson(registry.decode('AllTypes', bytes) as StructPayload)).toStrictEqual(expected);
+		expect(registry.decode('AllTypes', bytes)).toStrictEqual(expected);
 	});
 
 	test('bit fields cross storage boundaries and sign extend', () => {
@@ -87,15 +86,15 @@ describe('compiled struct decoder', { concurrent: false }, () => {
 		new DataView(bytes.buffer).setBigUint64(3, 0b11101n, true);
 		bytes[11] = 127;
 		const expected = { low: -3, high: 11, wide: 257, flag: true, signed: -3n, tail: 127 };
-		expect(structPayloadToJson(registry.decode('Bits', bytes) as StructPayload)).toStrictEqual(expected);
+		expect(registry.decode('Bits', bytes)).toStrictEqual(expected);
 	});
 
-	test('treats unusual field names as Map keys', () => {
+	test('treats unusual field names as own properties', () => {
 		const registry = new StructRegistry(new StructDecodeQueue(() => {}));
 		registry.register('Names', 'uint8 __proto__;uint8 constructor;uint8 default');
 		compileAndSnapshot(registry, 'Names');
 		const decoded = registry.decode('Names', new Uint8Array([1, 2, 3])) as StructPayload;
-		expect([...decoded]).toStrictEqual([
+		expect(Object.entries(decoded)).toStrictEqual([
 			['__proto__', 1],
 			['constructor', 2],
 			['default', 3],
@@ -116,7 +115,7 @@ describe('compiled struct decoder', { concurrent: false }, () => {
 			],
 			tail: 255,
 		};
-		expect(structPayloadToJson(registry.decode('Outer', bytes) as StructPayload)).toStrictEqual(expected);
+		expect(registry.decode('Outer', bytes)).toStrictEqual(expected);
 	});
 
 	test.concurrent('rejects truncated numeric payloads', ({ expect }) => {

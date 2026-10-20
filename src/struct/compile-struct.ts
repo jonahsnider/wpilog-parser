@@ -102,6 +102,7 @@ export function compileStruct(registry: StructRegistry, name: string): CompiledS
 		const functionName = `s${functions.size}`;
 		functions.set(structName, functionName);
 		const statements: string[] = [];
+		const fields: string[] = [];
 		const bitFields = new BitFieldTracker();
 		let offset = 0;
 
@@ -124,13 +125,13 @@ export function compileStruct(registry: StructRegistry, name: string): CompiledS
 
 			// Treat schema names as data, including __proto__ and reserved words.
 			const key = JSON.stringify(member.name);
-			statements.push(`result.set(${key}, ${expression});`);
+			statements.push(`const v${index} = ${expression};`);
+			fields.push(`[${key}]: v${index}`);
 		}
 
 		sources.push(`function ${functionName}(view, bytes, base) {
-			const result = new Map();
 			${statements.join('\n')}
-			return result;
+			return {${fields.join(',')}};
 		}`);
 		return functionName;
 	}

@@ -69,11 +69,20 @@ export const RecordType = {
 
 export type RecordType = (typeof RecordType)[keyof typeof RecordType];
 
-/** Decoded struct payload — a map of field names to values. */
-export type StructPayload = Map<
-	string,
-	number | boolean | bigint | string | StructPayload | number[] | boolean[] | bigint[] | StructPayload[]
->;
+/** Decoded struct payload. Fields, including nested structs, are own properties of a plain object. */
+export type StructPayload = {
+	[key: string]:
+		| number
+		| boolean
+		| bigint
+		| string
+		| StructPayload
+		| number[]
+		| boolean[]
+		| bigint[]
+		| StructPayload[]
+		| undefined;
+};
 
 /** A decoded data record (excludes control records). */
 export type DataRecord = Extract<DecodedRecord, { name: string }>;

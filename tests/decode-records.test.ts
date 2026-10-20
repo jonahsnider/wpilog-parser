@@ -75,10 +75,7 @@ describe('decodeRecords', () => {
 				];
 				const structs = Array.from(decodeRecords(records)).filter((record) => record.type === RecordType.StructArray);
 				expect(structs).toHaveLength(1);
-				expect(structs[0]?.payload).toStrictEqual([
-					new Map([['value', new Map([['count', 42]])]]),
-					new Map([['value', new Map([['count', 7]])]]),
-				]);
+				expect(structs[0]?.payload).toStrictEqual([{ value: { count: 42 } }, { value: { count: 7 } }]);
 			} finally {
 				vi.restoreAllMocks();
 			}
@@ -167,7 +164,7 @@ describe('decodeRecords', () => {
 				metadata: 'old-metadata',
 				type: RecordType.Struct,
 				structName: 'Old',
-				payload: new Map([['value', 42]]),
+				payload: { value: 42 },
 			},
 		]);
 	});

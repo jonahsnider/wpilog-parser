@@ -6,14 +6,13 @@ exports[`compiled struct decoder > ControlWord matches the interpreter > Control
     "textDecoder",
     ""use strict";
 		function s0(view, bytes, base) {
-			const result = new Map();
-			result.set("opModeHash", ((view.getBigUint64(base + 0, true) >> 0n) & 72057594037927935n));
-result.set("robotMode", ((view.getBigUint64(base + 0, true) >> 56n) & 3n));
-result.set("enabled", ((view.getBigUint64(base + 0, true) >> 58n) & 1n) !== 0n);
-result.set("eStop", ((view.getBigUint64(base + 0, true) >> 59n) & 1n) !== 0n);
-result.set("fmsAttached", ((view.getBigUint64(base + 0, true) >> 60n) & 1n) !== 0n);
-result.set("dsAttached", ((view.getBigUint64(base + 0, true) >> 61n) & 1n) !== 0n);
-			return result;
+			const v0 = ((view.getBigUint64(base + 0, true) >> 0n) & 72057594037927935n);
+const v1 = ((view.getBigUint64(base + 0, true) >> 56n) & 3n);
+const v2 = ((view.getBigUint64(base + 0, true) >> 58n) & 1n) !== 0n;
+const v3 = ((view.getBigUint64(base + 0, true) >> 59n) & 1n) !== 0n;
+const v4 = ((view.getBigUint64(base + 0, true) >> 60n) & 1n) !== 0n;
+const v5 = ((view.getBigUint64(base + 0, true) >> 61n) & 1n) !== 0n;
+			return {["opModeHash"]: v0,["robotMode"]: v1,["enabled"]: v2,["eStop"]: v3,["fmsAttached"]: v4,["dsAttached"]: v5};
 		}
 		return s0;",
   ],
@@ -26,21 +25,18 @@ exports[`compiled struct decoder > Pose2d matches the interpreter > Pose2d 1`] =
     "textDecoder",
     ""use strict";
 		function s1(view, bytes, base) {
-			const result = new Map();
-			result.set("x", view.getFloat64(base + 0, true));
-result.set("y", view.getFloat64(base + 8, true));
-			return result;
+			const v0 = view.getFloat64(base + 0, true);
+const v1 = view.getFloat64(base + 8, true);
+			return {["x"]: v0,["y"]: v1};
 		}
 function s2(view, bytes, base) {
-			const result = new Map();
-			result.set("value", view.getFloat64(base + 0, true));
-			return result;
+			const v0 = view.getFloat64(base + 0, true);
+			return {["value"]: v0};
 		}
 function s0(view, bytes, base) {
-			const result = new Map();
-			result.set("translation", s1(view, bytes, base + 0));
-result.set("rotation", s2(view, bytes, base + 16));
-			return result;
+			const v0 = s1(view, bytes, base + 0);
+const v1 = s2(view, bytes, base + 16);
+			return {["translation"]: v0,["rotation"]: v1};
 		}
 		return s0;",
   ],
@@ -53,22 +49,19 @@ exports[`compiled struct decoder > SwerveStates matches the interpreter > Swerve
     "textDecoder",
     ""use strict";
 		function s2(view, bytes, base) {
-			const result = new Map();
-			result.set("value", view.getFloat64(base + 0, true));
-			return result;
+			const v0 = view.getFloat64(base + 0, true);
+			return {["value"]: v0};
 		}
 function s1(view, bytes, base) {
-			const result = new Map();
-			result.set("speed", view.getFloat64(base + 0, true));
-result.set("angle", s2(view, bytes, base + 8));
-			return result;
+			const v0 = view.getFloat64(base + 0, true);
+const v1 = s2(view, bytes, base + 8);
+			return {["speed"]: v0,["angle"]: v1};
 		}
 function s0(view, bytes, base) {
-			const result = new Map();
 			const a0 = [];
 for (let i = 0; i < 4; i++) a0.push(s1(view, bytes, base + 0 + i * 16));
-result.set("states", a0);
-			return result;
+const v0 = a0;
+			return {["states"]: v0};
 		}
 		return s0;",
   ],
@@ -81,10 +74,9 @@ exports[`compiled struct decoder > Translation2d matches the interpreter > Trans
     "textDecoder",
     ""use strict";
 		function s0(view, bytes, base) {
-			const result = new Map();
-			result.set("x", view.getFloat64(base + 0, true));
-result.set("y", view.getFloat64(base + 8, true));
-			return result;
+			const v0 = view.getFloat64(base + 0, true);
+const v1 = view.getFloat64(base + 8, true);
+			return {["x"]: v0,["y"]: v1};
 		}
 		return s0;",
   ],
@@ -97,19 +89,17 @@ exports[`compiled struct decoder > accounts for trailing bit-field storage in ne
     "textDecoder",
     ""use strict";
 		function s1(view, bytes, base) {
-			const result = new Map();
-			result.set("value", Number(BigInt.asIntN(4, ((BigInt(view.getUint8(base + 0, true)) >> 0n) & 15n))));
-result.set("flag", ((BigInt(view.getUint8(base + 0, true)) >> 4n) & 1n) !== 0n);
-			return result;
+			const v0 = Number(BigInt.asIntN(4, ((BigInt(view.getUint8(base + 0, true)) >> 0n) & 15n)));
+const v1 = ((BigInt(view.getUint8(base + 0, true)) >> 4n) & 1n) !== 0n;
+			return {["value"]: v0,["flag"]: v1};
 		}
 function s0(view, bytes, base) {
-			const result = new Map();
-			result.set("prefix", view.getUint8(base + 0, true));
+			const v0 = view.getUint8(base + 0, true);
 const a1 = [];
 for (let i = 0; i < 2; i++) a1.push(s1(view, bytes, base + 1 + i * 1));
-result.set("items", a1);
-result.set("tail", view.getUint8(base + 3, true));
-			return result;
+const v1 = a1;
+const v2 = view.getUint8(base + 3, true);
+			return {["prefix"]: v0,["items"]: v1,["tail"]: v2};
 		}
 		return s0;",
   ],
@@ -122,14 +112,13 @@ exports[`compiled struct decoder > bit fields cross storage boundaries and sign 
     "textDecoder",
     ""use strict";
 		function s0(view, bytes, base) {
-			const result = new Map();
-			result.set("low", Number(BigInt.asIntN(4, ((BigInt(view.getUint8(base + 0, true)) >> 0n) & 15n))));
-result.set("high", Number(((BigInt(view.getUint8(base + 0, true)) >> 4n) & 15n)));
-result.set("wide", Number(((BigInt(view.getUint16(base + 1, true)) >> 0n) & 511n)));
-result.set("flag", ((BigInt(view.getUint16(base + 1, true)) >> 9n) & 1n) !== 0n);
-result.set("signed", BigInt.asIntN(5, ((view.getBigUint64(base + 3, true) >> 0n) & 31n)));
-result.set("tail", view.getUint8(base + 11, true));
-			return result;
+			const v0 = Number(BigInt.asIntN(4, ((BigInt(view.getUint8(base + 0, true)) >> 0n) & 15n)));
+const v1 = Number(((BigInt(view.getUint8(base + 0, true)) >> 4n) & 15n));
+const v2 = Number(((BigInt(view.getUint16(base + 1, true)) >> 0n) & 511n));
+const v3 = ((BigInt(view.getUint16(base + 1, true)) >> 9n) & 1n) !== 0n;
+const v4 = BigInt.asIntN(5, ((view.getBigUint64(base + 3, true) >> 0n) & 31n));
+const v5 = view.getUint8(base + 11, true);
+			return {["low"]: v0,["high"]: v1,["wide"]: v2,["flag"]: v3,["signed"]: v4,["tail"]: v5};
 		}
 		return s0;",
   ],
@@ -142,49 +131,47 @@ exports[`compiled struct decoder > handles primitives, arrays, strings and enums
     "textDecoder",
     ""use strict";
 		function s0(view, bytes, base) {
-			const result = new Map();
 			const a0 = [];
 for (let i = 0; i < 2; i++) a0.push(Boolean(view.getUint8(base + 0 + i * 1, true)));
-result.set("flags", a0);
-result.set("a", view.getInt8(base + 2, true));
-result.set("b", view.getUint8(base + 3, true));
-result.set("c", view.getInt16(base + 4, true));
-result.set("d", view.getUint16(base + 6, true));
-result.set("e", view.getInt32(base + 8, true));
-result.set("f", view.getUint32(base + 12, true));
-result.set("g", view.getBigInt64(base + 16, true));
-result.set("h", view.getBigUint64(base + 24, true));
-result.set("i", view.getFloat32(base + 32, true));
-result.set("j", view.getFloat32(base + 36, true));
-result.set("k", view.getFloat64(base + 40, true));
-result.set("l", view.getFloat64(base + 48, true));
-result.set("text", textDecoder.decode(bytes.subarray(base + 56, base + 56 + 4)));
-result.set("letter", textDecoder.decode(bytes.subarray(base + 60, base + 60 + 1)));
-result.set("mode", view.getUint8(base + 61, true));
+const v0 = a0;
+const v1 = view.getInt8(base + 2, true);
+const v2 = view.getUint8(base + 3, true);
+const v3 = view.getInt16(base + 4, true);
+const v4 = view.getUint16(base + 6, true);
+const v5 = view.getInt32(base + 8, true);
+const v6 = view.getUint32(base + 12, true);
+const v7 = view.getBigInt64(base + 16, true);
+const v8 = view.getBigUint64(base + 24, true);
+const v9 = view.getFloat32(base + 32, true);
+const v10 = view.getFloat32(base + 36, true);
+const v11 = view.getFloat64(base + 40, true);
+const v12 = view.getFloat64(base + 48, true);
+const v13 = textDecoder.decode(bytes.subarray(base + 56, base + 56 + 4));
+const v14 = textDecoder.decode(bytes.subarray(base + 60, base + 60 + 1));
+const v15 = view.getUint8(base + 61, true);
 const a16 = [];
 for (let i = 0; i < 2; i++) a16.push(view.getInt16(base + 62 + i * 2, true));
-result.set("values", a16);
+const v16 = a16;
 const a17 = [];
 for (let i = 0; i < 0; i++) a17.push(view.getFloat64(base + 66 + i * 8, true));
-result.set("empty", a17);
-			return result;
+const v17 = a17;
+			return {["flags"]: v0,["a"]: v1,["b"]: v2,["c"]: v3,["d"]: v4,["e"]: v5,["f"]: v6,["g"]: v7,["h"]: v8,["i"]: v9,["j"]: v10,["k"]: v11,["l"]: v12,["text"]: v13,["letter"]: v14,["mode"]: v15,["values"]: v16,["empty"]: v17};
 		}
 		return s0;",
   ],
 ]
 `;
 
-exports[`compiled struct decoder > treats unusual field names as Map keys > Names 1`] = `
+exports[`compiled struct decoder > treats unusual field names as own properties > Names 1`] = `
 [
   [
     "textDecoder",
     ""use strict";
 		function s0(view, bytes, base) {
-			const result = new Map();
-			result.set("__proto__", view.getUint8(base + 0, true));
-result.set("constructor", view.getUint8(base + 1, true));
-result.set("default", view.getUint8(base + 2, true));
-			return result;
+			const v0 = view.getUint8(base + 0, true);
+const v1 = view.getUint8(base + 1, true);
+const v2 = view.getUint8(base + 2, true);
+			return {["__proto__"]: v0,["constructor"]: v1,["default"]: v2};
 		}
 		return s0;",
   ],

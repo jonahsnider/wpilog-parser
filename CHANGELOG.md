@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.0](https://github.com/jonahsnider/wpilog-parser/compare/v3.0.0...v3.1.0) (2026-10-24)
+
+
+### Features
+
+* add shell completions to CLI ([#68](https://github.com/jonahsnider/wpilog-parser/issues/68)) ([b23f30b](https://github.com/jonahsnider/wpilog-parser/commit/b23f30b000c82c1a19f19b14496d71c9b9899527))
+
 ## [3.0.0](https://github.com/jonahsnider/wpilog-parser/compare/v2.5.0...v3.0.0) (2026-10-20)
 
 

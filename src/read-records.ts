@@ -130,40 +130,20 @@ function readTimestamp(view: DataView, offset: number, length: number): bigint {
 			return BigInt(view.getUint8(offset));
 		case 2:
 			return BigInt(view.getUint16(offset, true));
-		case 3: {
-			const b0 = BigInt(view.getUint8(offset));
-			const b1 = BigInt(view.getUint8(offset + 1));
-			const b2 = BigInt(view.getUint8(offset + 2));
-			return (b2 << 16n) | (b1 << 8n) | b0;
-		}
+		case 3:
+			return BigInt(view.getUint16(offset, true) + view.getUint8(offset + 2) * 2 ** 16);
 		case 4:
 			return BigInt(view.getUint32(offset, true));
-		case 5: {
-			const b0 = BigInt(view.getUint8(offset));
-			const b1 = BigInt(view.getUint8(offset + 1));
-			const b2 = BigInt(view.getUint8(offset + 2));
-			const b3 = BigInt(view.getUint8(offset + 3));
-			const b4 = BigInt(view.getUint8(offset + 4));
-			return (b4 << 32n) | (b3 << 24n) | (b2 << 16n) | (b1 << 8n) | b0;
-		}
-		case 6: {
-			const b0 = BigInt(view.getUint8(offset));
-			const b1 = BigInt(view.getUint8(offset + 1));
-			const b2 = BigInt(view.getUint8(offset + 2));
-			const b3 = BigInt(view.getUint8(offset + 3));
-			const b4 = BigInt(view.getUint8(offset + 4));
-			const b5 = BigInt(view.getUint8(offset + 5));
-			return (b5 << 40n) | (b4 << 32n) | (b3 << 24n) | (b2 << 16n) | (b1 << 8n) | b0;
-		}
+		// Up to six bytes fit exactly in a number; convert to bigint only once.
+		case 5:
+			return BigInt(view.getUint32(offset, true) + view.getUint8(offset + 4) * 2 ** 32);
+		case 6:
+			return BigInt(view.getUint32(offset, true) + view.getUint16(offset + 4, true) * 2 ** 32);
 		case 7: {
-			const b0 = BigInt(view.getUint8(offset));
-			const b1 = BigInt(view.getUint8(offset + 1));
-			const b2 = BigInt(view.getUint8(offset + 2));
-			const b3 = BigInt(view.getUint8(offset + 3));
-			const b4 = BigInt(view.getUint8(offset + 4));
-			const b5 = BigInt(view.getUint8(offset + 5));
-			const b6 = BigInt(view.getUint8(offset + 6));
-			return (b6 << 48n) | (b5 << 40n) | (b4 << 32n) | (b3 << 24n) | (b2 << 16n) | (b1 << 8n) | b0;
+			// Seven bytes can exceed Number.MAX_SAFE_INTEGER, so combine chunks as bigints.
+			const low = view.getUint32(offset, true);
+			const high = view.getUint16(offset + 4, true) + view.getUint8(offset + 6) * 2 ** 16;
+			return (BigInt(high) << 32n) | BigInt(low);
 		}
 		case 8:
 			return view.getBigUint64(offset, true);

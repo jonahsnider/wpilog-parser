@@ -1,3 +1,6 @@
+import { execFile } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 import { describe, test } from 'vite-plus/test';
 import { formatCatalog, selectCatalogFormat } from '../src/cli/catalog.ts';
 
@@ -5,6 +8,26 @@ const ENTRIES = [
 	{ entryId: 1, name: '/Robot/Pose', type: 'struct:Pose2d', metadata: '' },
 	{ entryId: 12, name: '/DS:enabled', type: 'boolean', metadata: '{"source":"DS"}' },
 ];
+
+const runNode = promisify(execFile);
+const CLI_PATH = fileURLToPath(new URL('../src/cli.ts', import.meta.url));
+
+describe('shell completions', () => {
+	test('handles completion requests without running catalog or reporting an unknown command', async ({ expect }) => {
+		const { stdout, stderr } = await runNode(process.execPath, [
+			CLI_PATH,
+			'complete',
+			'--',
+			'catalog',
+			'missing.wpilog',
+			'--',
+		]);
+
+		expect(stdout).toMatch(/^--json\t/m);
+		expect(stdout.endsWith(':4\n')).toBe(true);
+		expect(stderr).toBe('');
+	});
+});
 
 describe('formatCatalog', () => {
 	test('uses TOON by default', ({ expect }) => {

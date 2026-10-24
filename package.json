@@ -44,6 +44,7 @@
 		"test": "vp test"
 	},
 	"dependencies": {
+		"@bomb.sh/tab": "^0.0.22",
 		"@toon-format/toon": "^4.1.1",
 		"cac": "^7.0.0",
 		"chevrotain": "^13.0.0",

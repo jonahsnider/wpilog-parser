@@ -54,7 +54,7 @@ source <(wpilog complete zsh)
 source <(wpilog complete bash)
 
 # fish
-wpilog complete fish | source
+wpilog complete fish > ~/.config/fish/completions/wpilog.fish
 
 # PowerShell
 wpilog complete powershell | Out-String | Invoke-Expression

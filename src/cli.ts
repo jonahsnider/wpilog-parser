@@ -38,7 +38,6 @@ try {
 			.usage('complete <zsh|bash|fish|powershell>')
 			.example('source <(wpilog complete zsh)')
 			.example('source <(wpilog complete bash)')
-			.example('wpilog complete fish | source')
 			.example('wpilog complete fish > ~/.config/fish/completions/wpilog.fish')
 			.example('wpilog complete powershell | Out-String | Invoke-Expression');
 	}

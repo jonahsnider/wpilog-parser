@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import tab from '@bomb.sh/tab/cac';
 import { cac } from 'cac';
 import { Diagnostic, formatDiagnostic } from 'nostics';
 import oscStatus from 'osc-status';
@@ -12,7 +13,8 @@ const cli = cac('wpilog');
 cli
 	.command('catalog <file>', 'List the entries available in a WPILOG file')
 	.option('--json', 'Output as JSON')
-	.option('--jsonl, --ndjson', 'Output as newline-delimited JSON')
+	.option('--jsonl', 'Output as newline-delimited JSON')
+	.option('--ndjson', 'Output as newline-delimited JSON')
 	.option('--csv', 'Output as CSV')
 	.example('wpilog catalog ./example.wpilog')
 	.example('wpilog catalog ./example.wpilog --json')
@@ -28,8 +30,19 @@ cli.help();
 cli.version(packageJson.version);
 
 try {
+	await tab(cli);
+	const completeCommand = cli.commands.find((command) => command.name === 'complete');
+	if (completeCommand) {
+		completeCommand.description = 'Generate shell completion scripts';
+		completeCommand
+			.usage('complete <zsh|bash|fish|powershell>')
+			.example('source <(wpilog complete zsh)')
+			.example('source <(wpilog complete bash)')
+			.example('wpilog complete fish > ~/.config/fish/completions/wpilog.fish')
+			.example('wpilog complete powershell | Out-String | Invoke-Expression');
+	}
+
 	const parsed = cli.parse(process.argv, { run: false });
-	await cli.runMatchedCommand();
 
 	if (!cli.matchedCommand && !parsed.options.help && !parsed.options.version) {
 		if (parsed.args[0]) {
@@ -37,6 +50,8 @@ try {
 		}
 		cli.outputHelp();
 	}
+
+	await cli.runMatchedCommand();
 } catch (error) {
 	const message =
 		error instanceof Diagnostic ? formatDiagnostic(error) : error instanceof Error ? error.message : String(error);

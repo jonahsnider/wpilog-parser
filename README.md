@@ -44,6 +44,22 @@ The default output is [TOON](https://toonformat.dev). JSON, JSONL/NDJSON, and CS
 npx wpilog-parser catalog ./example.wpilog --json
 ```
 
+`wpilog` includes shell completions via `wpilog complete`:
+
+```sh
+# zsh
+source <(wpilog complete zsh)
+
+# bash (requires bash 4+ and bash-completion)
+source <(wpilog complete bash)
+
+# fish
+wpilog complete fish > ~/.config/fish/completions/wpilog.fish
+
+# PowerShell
+wpilog complete powershell | Out-String | Invoke-Expression
+```
+
 ## Agent skill
 
 This package ships an [Agent Skill](https://agentskills.io) at `skills/analyze-wpilog/SKILL.md` that teaches AI coding agents how to use the library.

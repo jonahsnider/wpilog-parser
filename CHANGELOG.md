@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.1](https://github.com/jonahsnider/wpilog-parser/compare/v3.1.0...v3.1.1) (2026-10-24)
+
+
+### Performance Improvements
+
+* reduce bigint operations in timestamp decoding ([#70](https://github.com/jonahsnider/wpilog-parser/issues/70)) ([5d60dbc](https://github.com/jonahsnider/wpilog-parser/commit/5d60dbc3d131c0d849440e007a6e5e3f045d4594))
+
 ## [3.1.0](https://github.com/jonahsnider/wpilog-parser/compare/v3.0.0...v3.1.0) (2026-10-24)
 
 

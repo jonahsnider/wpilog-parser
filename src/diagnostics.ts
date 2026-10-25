@@ -3,10 +3,6 @@ import { defineDiagnostics } from 'nostics';
 /** Stable codes for errors callers can act on. */
 export const diagnostics = defineDiagnostics({
 	codes: {
-		WPILOG_C0001: {
-			why: (p: { command: string }) => `Unknown command \`${p.command}\``,
-			fix: 'Run `wpilog --help` to see the available commands.',
-		},
 		WPILOG_C0002: {
 			why: 'Output flags cannot be combined',
 			fix: 'Choose one of --json, --jsonl, --ndjson, or --csv.',

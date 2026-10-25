@@ -36,7 +36,7 @@ test('struct syntax diagnostics retain the parser errors as their cause', ({ exp
 test('CLI diagnostics retain file system errors as their cause', async ({ expect }) => {
 	await expect(catalogFile('/nonexistent/wpilog-file.wpilog')).rejects.toMatchObject({
 		name: 'WPILOG_C0003',
-		cause: { code: 'ENOENT' },
+		cause: { code: 'ENOENT', path: '/nonexistent/wpilog-file.wpilog' },
 	});
 	expect(() => selectCatalogFormat({ json: true, csv: true })).toThrowError('Output flags cannot be combined');
 });

@@ -1,6 +1,8 @@
 import { parseStruct } from './parser.ts';
 import type { StructDeclaration } from './types.ts';
 
+export { parseStruct };
+
 const cache = new Map<string, StructDeclaration[]>();
 
 /** Parse a WPILib struct specification string into declarations. */

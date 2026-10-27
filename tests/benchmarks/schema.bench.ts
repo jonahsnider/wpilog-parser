@@ -1,6 +1,5 @@
 import { test } from 'vite-plus/test';
-import { parseStruct } from '../../src/struct/parser.ts';
-import { parseStructSpecification } from '../../src/struct/parse-struct.ts';
+import { parseStruct, parseStructSpecification } from '../../src/struct/parse-struct.ts';
 
 test.for([
 	'double vx;double vy;double omega',

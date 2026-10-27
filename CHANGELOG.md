@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.2](https://github.com/jonahsnider/wpilog-parser/compare/v3.1.1...v3.1.2) (2026-10-27)
+
+
+### Performance Improvements
+
+* replace Chevrotain with a hand-written struct parser ([#72](https://github.com/jonahsnider/wpilog-parser/issues/72)) ([b928902](https://github.com/jonahsnider/wpilog-parser/commit/b9289028774f036d486efe6fb1483b7931c75799))
+
 ## [3.1.1](https://github.com/jonahsnider/wpilog-parser/compare/v3.1.0...v3.1.1) (2026-10-24)
 
 

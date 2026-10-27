@@ -151,3 +151,85 @@ describe('parse struct specification', () => {
 		});
 	});
 });
+
+describe('schema grammar and diagnostics', () => {
+	test('empty enums, duplicate members, and exact bigint values', ({ expect }) => {
+		const declarations = parseStructSpecification('{} int8 empty;{a=1,a=9007199254740993} uint64 flags');
+		expect(declarations[0]!.enumSpecification).toStrictEqual(new Map());
+		expect(declarations[1]!.enumSpecification).toStrictEqual(new Map([['a', 9007199254740993n]]));
+	});
+
+	test('whitespace, empty declarations, and custom type names', ({ expect }) => {
+		expect(parseStructSpecification(';;\n Custom_2\t_value [ 4 ];bool flag : 1;;')).toStrictEqual([
+			{ name: '_value', value: 'Custom_2', enumSpecification: undefined, arraySize: 4, bitWidth: undefined },
+			{ name: 'flag', value: 'bool', enumSpecification: undefined, arraySize: undefined, bitWidth: 1 },
+		]);
+	});
+
+	test.for([
+		['bool x!', 'WPILOG_R0007'],
+		['int8 x:99!', 'WPILOG_R0007'],
+		['int8 x:99;', 'WPILOG_R0010'],
+		['int8 x:99;bool', 'WPILOG_R0008'],
+		['{} bool x', 'WPILOG_R0009'],
+		['Custom x:1', 'WPILOG_R0011'],
+		['{a=-1} int8 x', 'WPILOG_R0007'],
+		['{a=1,} int8 x', 'WPILOG_R0008'],
+		['int8 x[2]:1', 'WPILOG_R0008'],
+	])('%s reports %s', ([source, code], { expect }) => {
+		expect(() => parseStructSpecification(source!)).toThrowError(expect.objectContaining({ code }));
+	});
+
+	test.for(['', ' ', '\n\t', '; ;\n;', ' \r\n ;; '])(
+		'accepts empty schemas with whitespace: %j',
+		(source, { expect }) => {
+			expect(parseStructSpecification(source)).toStrictEqual([]);
+		},
+	);
+
+	test.for(['bool value ', '\tbool\nvalue\r\n', 'bool value ; ', ' ; bool value ; ; \n'])(
+		'ignores whitespace between tokens: %j',
+		(source, { expect }) => {
+			expect(parseStructSpecification(source)).toStrictEqual(parseStructSpecification('bool value'));
+		},
+	);
+
+	test('enum is a keyword only at the start of an enum specification', ({ expect }) => {
+		expect(parseStructSpecification('enumType enumValue;int8 enum')).toStrictEqual([
+			{ name: 'enumValue', value: 'enumType', enumSpecification: undefined, arraySize: undefined, bitWidth: undefined },
+			{ name: 'enum', value: 'int8', enumSpecification: undefined, arraySize: undefined, bitWidth: undefined },
+		]);
+	});
+
+	test('decimal integers can have leading zeros', ({ expect }) => {
+		const declarations = parseStructSpecification('int8 arr[01];int8 flags:01;{zero=00,one=01} int8 value');
+		expect(declarations[0]!.arraySize).toBe(1);
+		expect(declarations[1]!.bitWidth).toBe(1);
+		expect(declarations[2]!.enumSpecification).toStrictEqual(
+			new Map([
+				['zero', 0n],
+				['one', 1n],
+			]),
+		);
+	});
+
+	test.for([
+		'bool 123',
+		'int8 value[1x]',
+		'int8 value:1x',
+		'bool value bool other',
+		'int8 value[1][2]',
+		'enum int8 value',
+	])('rejects invalid token sequences: %s', (source, { expect }) => {
+		expect(() => parseStructSpecification(source)).toThrowError(expect.objectContaining({ code: 'WPILOG_R0008' }));
+	});
+
+	test('a failed parse does not affect subsequent parses', ({ expect }) => {
+		expect(() => parseStructSpecification('{a=1,} uint8 broken')).toThrowError();
+		expect(parseStructSpecification('uint8 recovered')[0]!.name).toBe('recovered');
+	});
+
+	test('cached results retain their identity', ({ expect }) => {
+		expect(parseStructSpecification('bool cached')).toBe(parseStructSpecification('bool cached'));
+	});
+});

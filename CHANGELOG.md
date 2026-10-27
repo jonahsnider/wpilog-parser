@@ -5,9 +5,6 @@
 
 ### Performance Improvements
 
-* add cached and uncached schema parsing benchmarks ([9e52115](https://github.com/jonahsnider/wpilog-parser/commit/9e5211566eec72c5e955e8db23584519227d585b))
-* batch schema benchmarks to reduce measurement overhead ([2f40160](https://github.com/jonahsnider/wpilog-parser/commit/2f4016028d4fcbab469ede1e977059f1c8cbe6b6))
-* focus schema benchmarks on uncached parsing ([f48b669](https://github.com/jonahsnider/wpilog-parser/commit/f48b669ea858bc66ca339f7d9adac4417e1bc79f))
 * replace Chevrotain with a hand-written struct parser ([#72](https://github.com/jonahsnider/wpilog-parser/issues/72)) ([b928902](https://github.com/jonahsnider/wpilog-parser/commit/b9289028774f036d486efe6fb1483b7931c75799))
 
 ## [3.1.1](https://github.com/jonahsnider/wpilog-parser/compare/v3.1.0...v3.1.1) (2026-10-24)

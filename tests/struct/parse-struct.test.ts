@@ -159,6 +159,22 @@ describe('schema grammar and diagnostics', () => {
 		expect(declarations[1]!.enumSpecification).toStrictEqual(new Map([['a', 9007199254740993n]]));
 	});
 
+	test.for(['int8', 'uint8', 'int16', 'uint16', 'int32', 'uint32', 'int64', 'uint64'])(
+		'accepts enums on %s',
+		(type, { expect }) => {
+			expect(parseStructSpecification(`{a=1} ${type} value`)[0]!.enumSpecification).toStrictEqual(new Map([['a', 1n]]));
+		},
+	);
+
+	test.for(['bool', 'char', 'float32', 'double', 'Custom', 'int128', 'uint08', 'int8Extra', 'Int8'])(
+		'rejects enums on %s',
+		(type, { expect }) => {
+			expect(() => parseStructSpecification(`{} ${type} value`)).toThrowError(
+				expect.objectContaining({ code: 'WPILOG_R0009' }),
+			);
+		},
+	);
+
 	test('whitespace, empty declarations, and custom type names', ({ expect }) => {
 		expect(parseStructSpecification(';;\n Custom_2\t_value [ 4 ];bool flag : 1;;')).toStrictEqual([
 			{ name: '_value', value: 'Custom_2', enumSpecification: undefined, arraySize: 4, bitWidth: undefined },

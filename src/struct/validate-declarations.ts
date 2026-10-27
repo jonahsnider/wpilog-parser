@@ -5,8 +5,21 @@ export function validateDeclarations(declarations: StructDeclaration[]): StructD
 	// Check field types and widths after the complete schema has parsed.
 	for (const declaration of declarations) {
 		const { value, enumSpecification, bitWidth } = declaration;
-		const integerType = /^(?:u?int)(?:8|16|32|64)$/.test(value);
-		if (enumSpecification && !integerType) throw diagnostics.WPILOG_R0009();
+		if (enumSpecification) {
+			switch (value) {
+				case KnownStructTypeName.Int8:
+				case KnownStructTypeName.Uint8:
+				case KnownStructTypeName.Int16:
+				case KnownStructTypeName.Uint16:
+				case KnownStructTypeName.Int32:
+				case KnownStructTypeName.Uint32:
+				case KnownStructTypeName.Int64:
+				case KnownStructTypeName.Uint64:
+					break;
+				default:
+					throw diagnostics.WPILOG_R0009();
+			}
+		}
 		if (bitWidth !== undefined) validateBitWidth(value, bitWidth);
 	}
 	return declarations;

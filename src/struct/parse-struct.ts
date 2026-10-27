@@ -16,6 +16,13 @@ export function parseStructSpecification(declaration: string): StructDeclaration
 		return existing;
 	}
 
+	const created = parseStruct(declaration);
+	cache.set(declaration, created);
+	return created;
+}
+
+/** Parse a WPILib struct specification without caching the result. */
+export function parseStruct(declaration: string): StructDeclaration[] {
 	const lexingResult = lexer.tokenize(declaration);
 
 	if (lexingResult.errors.length > 0) {
@@ -30,7 +37,5 @@ export function parseStructSpecification(declaration: string): StructDeclaration
 		throw diagnostics.WPILOG_R0008({ cause: new AggregateError(parser.errors) });
 	}
 
-	const created = structAstVisitor.structSpecification(cstNode.children);
-	cache.set(declaration, created);
-	return created;
+	return structAstVisitor.structSpecification(cstNode.children);
 }

@@ -4,6 +4,8 @@ import { validateDeclarations } from './validate-declarations.ts';
 
 // Scan complete identifiers and decimal integers, skipping whitespace.
 const tokenPattern = /\s*([a-zA-Z_]\w*|\d+|[;,=:[\]{}])?/y;
+const identifierStartPattern = /^[a-zA-Z_]/;
+const integerStartPattern = /^\d/;
 
 /** Parse a WPILib struct schema into field declarations. */
 export function parseStruct(source: string): StructDeclaration[] {
@@ -69,14 +71,14 @@ class SchemaParser {
 	}
 
 	private readIdentifier(): string {
-		if (!/^[a-zA-Z_]/.test(this.token)) this.fail('identifier');
+		if (!identifierStartPattern.test(this.token)) this.fail('identifier');
 		const value = this.token;
 		this.advance();
 		return value;
 	}
 
 	private readInteger(): string {
-		if (!/^\d/.test(this.token)) this.fail('integer');
+		if (!integerStartPattern.test(this.token)) this.fail('integer');
 		const value = this.token;
 		this.advance();
 		return value;

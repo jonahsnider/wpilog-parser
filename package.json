@@ -64,6 +64,6 @@
 			"version": "26.x"
 		}
 	},
-	"packageManager": "pnpm@12.16.0",
+	"packageManager": "pnpm@12.16.1",
 	"tsdocMetadata": "./dist/tsdoc-metadata.json"
 }

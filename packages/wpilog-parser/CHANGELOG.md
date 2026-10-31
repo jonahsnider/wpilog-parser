@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.2.0](https://github.com/jonahsnider/wpilog-parser/compare/v3.1.2...v3.2.0) (2026-10-31)
+
+
+### Features
+
+* extract wpilib-struct into a pnpm workspace ([801f4b8](https://github.com/jonahsnider/wpilog-parser/commit/801f4b86380a52c96e0e21e2824247a25a47f8d7))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * wpilib-struct bumped to 1.0.0
+
 ## [3.1.2](https://github.com/jonahsnider/wpilog-parser/compare/v3.1.1...v3.1.2) (2026-10-27)
 
 

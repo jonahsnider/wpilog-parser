@@ -219,9 +219,9 @@ for (const mode of ['generated', 'CSP'] as const) {
 			expect(() => registry.decode('Outer', bytes.subarray(0, 3), 1)).toThrow(RangeError);
 		});
 
-		test('handles full-width and zero-width declarations after packed fields', ({ expect }) => {
+		test('handles full-width and plain declarations after packed fields', ({ expect }) => {
 			const registry = new StructRegistry();
-			registry.register('Bits', 'uint8 packed:4;uint8 full:8;int16 plain:0');
+			registry.register('Bits', 'uint8 packed:4;uint8 full:8;int16 plain');
 			expect(registry.getByteLength('Bits')).toBe(4);
 			expect(registry.decode('Bits', new Uint8Array([3, 255, 0xfe, 0xff]))).toStrictEqual({
 				packed: 3,

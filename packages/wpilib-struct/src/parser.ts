@@ -2,10 +2,10 @@ import { diagnostics } from './errors.ts';
 import type { StructDeclaration } from './types.ts';
 import { validateDeclarations } from './validate-declarations.ts';
 
-// Scan complete identifiers and decimal integers, skipping whitespace.
-const tokenPattern = /\s*([a-zA-Z_]\w*|\d+|[;,=:[\]{}])?/y;
+// Scan complete identifiers and signed decimal integers, skipping whitespace.
+const tokenPattern = /\s*([a-zA-Z_]\w*|-?\d+|[;,=:[\]{}])?/y;
 const identifierStartPattern = /^[a-zA-Z_]/;
-const integerStartPattern = /^\d/;
+const integerStartPattern = /^-?\d/;
 
 /** Parse a WPILib struct schema into field declarations. */
 export function parseStruct(source: string): StructDeclaration[] {
@@ -44,11 +44,11 @@ class SchemaParser {
 		let bitWidth: number | undefined;
 		if (this.at('[')) {
 			this.advance();
-			arraySize = Number(this.readInteger());
+			arraySize = this.readPositiveInteger();
 			this.consume(']');
 		} else if (this.at(':')) {
 			this.advance();
-			bitWidth = Number(this.readInteger());
+			bitWidth = this.readPositiveInteger();
 		}
 		return { name, value, enumSpecification, arraySize, bitWidth };
 	}
@@ -64,10 +64,17 @@ class SchemaParser {
 				members.set(name, BigInt(this.readInteger()));
 				if (!this.at(',')) break;
 				this.advance();
+				if (this.at('}')) break;
 			}
 		}
 		this.consume('}');
 		return members;
+	}
+
+	private readPositiveInteger(): number {
+		const value = Number(this.readInteger());
+		if (!Number.isSafeInteger(value) || value <= 0) this.fail('positive integer');
+		return value;
 	}
 
 	private readIdentifier(): string {

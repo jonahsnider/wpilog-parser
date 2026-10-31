@@ -33,7 +33,7 @@ describe('compiled struct decoder', { concurrent: false }, () => {
 		const registry = new StructRegistry();
 		registry.register(
 			'AllTypes',
-			'bool flags[2];int8 a;uint8 b;int16 c;uint16 d;int32 e;uint32 f;int64 g;uint64 h;float i;float32 j;double k;float64 l;char text[4];char letter;enum {off=0,on=1} uint8 mode;int16 values[2];double empty[0]',
+			'bool flags[2];int8 a;uint8 b;int16 c;uint16 d;int32 e;uint32 f;int64 g;uint64 h;float i;float32 j;double k;float64 l;char text[4];char letter;enum {off=0,on=1} uint8 mode;int16 values[2]',
 		);
 		compileAndSnapshot(registry, 'AllTypes');
 		const bytes = new Uint8Array(66);
@@ -71,7 +71,6 @@ describe('compiled struct decoder', { concurrent: false }, () => {
 			letter: 'Z',
 			mode: 1,
 			values: [-2, 3],
-			empty: [],
 		};
 		expect(registry.decode('AllTypes', bytes)).toStrictEqual(expected);
 	});

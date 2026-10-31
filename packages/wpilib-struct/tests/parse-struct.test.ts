@@ -159,6 +159,26 @@ describe('schema grammar and diagnostics', () => {
 		expect(declarations[1]!.enumSpecification).toStrictEqual(new Map([['a', 9007199254740993n]]));
 	});
 
+	test.for(['{negative=-2,positive=1,}', 'enum {negative=-2,positive=1}'])(
+		'accepts signed enum values and an optional trailing comma: %s',
+		(enumeration, { expect }) => {
+			expect(parseStructSpecification(`${enumeration} int8 value`)[0]!.enumSpecification).toStrictEqual(
+				new Map([
+					['negative', -2n],
+					['positive', 1n],
+				]),
+			);
+		},
+	);
+
+	// WPILib's reference parser requires positive array sizes and bitfield widths.
+	test.for(['int8 value[0]', 'int8 value[-1]', 'int8 value:0', 'int8 value:-1'])(
+		'rejects non-positive sizes: %s',
+		(source, { expect }) => {
+			expect(() => parseStructSpecification(source)).toThrowError(expect.objectContaining({ code: 'STRUCT_R0008' }));
+		},
+	);
+
 	test.for(['int8', 'uint8', 'int16', 'uint16', 'int32', 'uint32', 'int64', 'uint64'])(
 		'accepts enums on %s',
 		(type, { expect }) => {
@@ -189,8 +209,6 @@ describe('schema grammar and diagnostics', () => {
 		['int8 x:99;bool', 'STRUCT_R0008'],
 		['{} bool x', 'STRUCT_R0009'],
 		['Custom x:1', 'STRUCT_R0011'],
-		['{a=-1} int8 x', 'STRUCT_R0007'],
-		['{a=1,} int8 x', 'STRUCT_R0008'],
 		['int8 x[2]:1', 'STRUCT_R0008'],
 	])('%s reports %s', ([source, code], { expect }) => {
 		expect(() => parseStructSpecification(source!)).toThrowError(expect.objectContaining({ code }));
@@ -241,7 +259,7 @@ describe('schema grammar and diagnostics', () => {
 	});
 
 	test('a failed parse does not affect subsequent parses', ({ expect }) => {
-		expect(() => parseStructSpecification('{a=1,} uint8 broken')).toThrowError();
+		expect(() => parseStructSpecification('{a=1,,} uint8 broken')).toThrowError();
 		expect(parseStructSpecification('uint8 recovered')[0]!.name).toBe('recovered');
 	});
 

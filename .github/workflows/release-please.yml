@@ -36,8 +36,8 @@ jobs:
         if: ${{ steps.release.outputs.releases_created == 'true' }}
       # Publish dependencies before their consumers.
       - name: Publish wpilib-struct to npm
-        run: pnpm --filter wpilib-struct publish --provenance --access public --no-git-checks
+        run: pnpm --filter wpilib-struct publish --provenance --access public --no-git-checks --publish-wait-timeout 600000
         if: ${{ steps.release.outputs['packages/wpilib-struct--release_created'] == 'true' }}
       - name: Publish wpilog-parser to npm
-        run: pnpm --filter wpilog-parser publish --provenance --access public --no-git-checks
+        run: pnpm --filter wpilog-parser publish --provenance --access public --no-git-checks --publish-wait-timeout 600000
         if: ${{ steps.release.outputs['packages/wpilog-parser--release_created'] == 'true' }}

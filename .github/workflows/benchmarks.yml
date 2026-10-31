@@ -23,5 +23,5 @@ jobs:
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v5
         with:
-          run: vp test bench
+          run: vp run bench
           mode: 'simulation'

@@ -221,6 +221,6 @@ $RECYCLE.BIN/
 .claude/settings.local.json
 
 # Keep benchmark fixture logs tracked even though `logs` is ignored above
-!tests/fixtures/logs/
-!tests/fixtures/logs/**
+!packages/wpilog-parser/tests/fixtures/logs/
+!packages/wpilog-parser/tests/fixtures/logs/**
 .vitest/

@@ -19,7 +19,7 @@ jobs:
       - name: Update Vite+ configs
         run: vp config
       - name: Apply fixes
-        run: vp check --fix
+        run: vp run build && vp check --fix
       - name: Run autofix.ci
         uses: autofix-ci/action@v1
         with:

@@ -1,23 +1,4 @@
 {
-	"compilerOptions": {
-		"allowImportingTsExtensions": true,
-		"declaration": true,
-		"emitDeclarationOnly": true,
-		"erasableSyntaxOnly": true,
-		"esModuleInterop": true,
-		"isolatedModules": true,
-		"lib": ["esnext"],
-		"module": "preserve",
-		"moduleDetection": "force",
-		"moduleResolution": "bundler",
-		"noEmit": true,
-		"noUnusedLocals": true,
-		"resolveJsonModule": true,
-		"skipLibCheck": true,
-		"strict": true,
-		"target": "esnext",
-		"types": ["node"],
-		"verbatimModuleSyntax": true
-	},
-	"include": ["src", "tests"]
+	"extends": "./tsconfig.base.json",
+	"include": ["packages/*/src", "packages/*/tests", "packages/*/vite.config.ts", "scripts", "vite.config.ts"]
 }

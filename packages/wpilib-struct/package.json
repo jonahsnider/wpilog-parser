@@ -1,0 +1,43 @@
+{
+	"name": "wpilib-struct",
+	"version": "0.1.0",
+	"description": "Parse and decode WPILib structs",
+	"homepage": "https://github.com/jonahsnider/wpilog-parser/tree/main/packages/wpilib-struct#readme",
+	"license": "MIT",
+	"author": {
+		"name": "Jonah Snider",
+		"email": "jonah@jonahsnider.com",
+		"url": "https://jonahsnider.com"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/jonahsnider/wpilog-parser.git",
+		"directory": "packages/wpilib-struct"
+	},
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"exports": {
+		".": "./dist/index.mjs",
+		"./package.json": "./package.json"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"scripts": {
+		"api:check": "api-extractor run",
+		"api:update": "api-extractor run --local",
+		"bench": "vp test bench",
+		"build": "vp pack",
+		"dev": "vp pack --watch",
+		"prepublishOnly": "pnpm build && pnpm api:check",
+		"test": "vp test run"
+	},
+	"devDependencies": {
+		"@microsoft/api-extractor": "7.60.0",
+		"vite-plus": "catalog:",
+		"vitest": "catalog:"
+	},
+	"tsdocMetadata": "./dist/tsdoc-metadata.json"
+}

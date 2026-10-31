@@ -1,57 +1,21 @@
 {
-	"name": "wpilog-parser",
-	"version": "3.1.2",
-	"description": "Read WPILib wpilog data log files in TypeScript & JavaScript",
-	"homepage": "https://github.com/jonahsnider/wpilog-parser#readme",
-	"license": "MIT",
-	"author": {
-		"name": "Jonah Snider",
-		"email": "jonah@jonahsnider.com",
-		"url": "https://jonahsnider.com"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/jonahsnider/wpilog-parser.git"
-	},
-	"bin": {
-		"wpilog": "dist/cli.mjs"
-	},
-	"files": [
-		"dist",
-		"skills"
-	],
+	"name": "wpilog-parser-workspace",
+	"private": true,
 	"type": "module",
-	"exports": {
-		".": "./dist/index.mjs",
-		"./package.json": "./package.json"
-	},
-	"publishConfig": {
-		"access": "public"
-	},
 	"scripts": {
-		"api:check": "api-extractor run",
-		"api:update": "api-extractor run --local",
-		"bench": "vp test bench",
-		"build": "vp pack",
-		"check": "vp check",
-		"dev": "vp pack --watch",
-		"preapi:check": "vp run build",
-		"preapi:update": "vp run build",
+		"api:check": "vp run build && vp run -r api:check",
+		"api:update": "vp run build && vp run -r api:update",
+		"bench": "vp run build && vp test bench",
+		"build": "vp run -r build",
+		"check": "vp run build && vp check",
+		"dev": "vp run --filter wpilog-parser dev",
 		"prepare": "vp config",
-		"prepublishOnly": "vp run api:check",
-		"start": "node ./src/cli.ts",
-		"test": "vp test"
-	},
-	"dependencies": {
-		"@bomb.sh/tab": "^0.0.22",
-		"@drizzle-team/brocli": "^0.12.1",
-		"@toon-format/toon": "^4.1.1",
-		"nostics": "^1.3.0",
-		"osc-status": "^1.0.0"
+		"pack:check": "vp run api:check && node scripts/check-packages.ts",
+		"start": "vp run --filter wpilog-parser start",
+		"test": "vp run build && vp test run"
 	},
 	"devDependencies": {
 		"@codspeed/vitest-plugin": "6.1.0",
-		"@microsoft/api-extractor": "7.60.0",
 		"@types/node": "26.6.6",
 		"@typescript/native-preview": "7.0.0-dev.20260707.2",
 		"typescript": "7.0.2",
@@ -64,6 +28,5 @@
 			"version": "26.x"
 		}
 	},
-	"packageManager": "pnpm@12.16.1",
-	"tsdocMetadata": "./dist/tsdoc-metadata.json"
+	"packageManager": "pnpm@12.16.1"
 }

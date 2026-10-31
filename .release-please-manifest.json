@@ -1,4 +1,4 @@
 {
-	"packages/wpilib-struct": "1.0.0",
-	"packages/wpilog-parser": "3.2.0"
+	"packages/wpilib-struct": "1.0.1",
+	"packages/wpilog-parser": "3.2.1"
 }

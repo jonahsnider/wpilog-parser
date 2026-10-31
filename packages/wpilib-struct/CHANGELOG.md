@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/jonahsnider/wpilog-parser/compare/wpilib-struct-v1.0.0...wpilib-struct-v1.0.1) (2026-10-31)
+
+
+### Bug Fixes
+
+* **wpilib-struct:** handle enums with negative values ([24a628d](https://github.com/jonahsnider/wpilog-parser/commit/24a628dfa79175300bacd5267048e98c2b76be92))
+
 ## [1.0.0](https://github.com/jonahsnider/wpilog-parser/compare/wpilib-struct-v0.1.0...wpilib-struct-v1.0.0) (2026-10-31)
 
 

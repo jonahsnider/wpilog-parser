@@ -32,7 +32,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
         if: ${{ steps.release.outputs.releases_created == 'true' }}
       - name: Lint, test, and build
-        run: vp run build && vp check && vp test run && vp run -r api:check && node scripts/check-packages.ts
+        run: vp run build && vp check && vp test run && vp run --filter './packages/*' api:check && node scripts/check-packages.ts
         if: ${{ steps.release.outputs.releases_created == 'true' }}
       # Publish dependencies before their consumers.
       - name: Publish wpilib-struct to npm

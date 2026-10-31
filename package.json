@@ -3,8 +3,8 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"api:check": "vp run build && vp run -r api:check",
-		"api:update": "vp run build && vp run -r api:update",
+		"api:check": "vp run build && vp run --filter './packages/*' api:check",
+		"api:update": "vp run build && vp run --filter './packages/*' api:update",
 		"bench": "vp run build && vp test bench",
 		"build": "vp run -r build",
 		"check": "vp run build && vp check",

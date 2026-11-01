@@ -2,14 +2,21 @@ import { ByteOffset } from './byte-offset.ts';
 import { diagnostics } from './errors.ts';
 import type { StructPayload } from './types.ts';
 import { BitFieldTracker, decodeBitField } from './bit-field.ts';
+import { compileStructClosures } from './compile-struct-closures.ts';
 import { allowsCodeGeneration, compileStruct, type CompiledStructDecoder } from './compile-struct.ts';
 import { parseStructSpecification } from './parse-struct.ts';
 import { StructDependencyGraph } from './struct-dependency-graph.ts';
 import { KnownStructTypeName, type StructDeclaration, type StructSpecification } from './types.ts';
 
-/** Decoder policy. By default runtime compilation is attempted lazily, with a CSP-safe fallback. */
+/**
+ * Decoder policy. Defaults to `true`: try `new Function`, then CSP-safe closures, then interpreter.
+ * - `true` / omitted: try `new Function`, then closures, then interpreter
+ * - `'function'`: only `new Function`; on failure use the interpreter
+ * - `'closures'`: only CSP-safe closure compilation
+ * - `false`: interpreter only
+ */
 export type StructRegistryOptions = {
-	codeGeneration?: boolean;
+	codeGeneration?: boolean | 'function' | 'closures';
 };
 
 /** Reusable schemas, dependency resolution, layout sizes, and decoders. */
@@ -18,11 +25,12 @@ export class StructRegistry {
 	private readonly definitions = new Map<string, StructSpecification>();
 	private readonly byteLengths = new Map<string, number>();
 	private readonly decoders = new Map<string, CompiledStructDecoder>();
-	private codeGenerationAllowed?: boolean;
+	private readonly codeGeneration: boolean | 'function' | 'closures';
+	private functionGenerationAllowed?: boolean;
 	private readonly graph = new StructDependencyGraph();
 
 	constructor(options: StructRegistryOptions = {}) {
-		if (options.codeGeneration === false) this.codeGenerationAllowed = false;
+		this.codeGeneration = options.codeGeneration ?? true;
 	}
 
 	register(name: string, definition: string): void {
@@ -97,22 +105,39 @@ export class StructRegistry {
 	}
 
 	private getDecoder(name: string): CompiledStructDecoder | undefined {
-		this.codeGenerationAllowed ??= allowsCodeGeneration();
-		if (!this.codeGenerationAllowed) return undefined;
+		if (this.codeGeneration === false) return undefined;
 
 		const existing = this.decoders.get(name);
 		if (existing) return existing;
 
-		try {
-			const decoder = compileStruct(this, name);
+		if (this.codeGeneration === 'closures') {
+			const decoder = compileStructClosures(this, name);
 			this.decoders.set(name, decoder);
 			return decoder;
-		} catch (error) {
-			// Also handle a policy change between the probe and compilation.
-			if (!(error instanceof EvalError)) throw error;
-			this.codeGenerationAllowed = false;
-			return undefined;
 		}
+
+		const preferFunction = this.codeGeneration === true || this.codeGeneration === 'function';
+		if (preferFunction) {
+			this.functionGenerationAllowed ??= allowsCodeGeneration();
+			if (this.functionGenerationAllowed) {
+				try {
+					const decoder = compileStruct(this, name);
+					this.decoders.set(name, decoder);
+					return decoder;
+				} catch (error) {
+					// Also handle a policy change between the probe and compilation.
+					if (!(error instanceof EvalError)) throw error;
+					this.functionGenerationAllowed = false;
+				}
+			}
+		}
+
+		// `'function'` falls back to the interpreter; default/`true` uses CSP-safe closures.
+		if (this.codeGeneration === 'function') return undefined;
+
+		const decoder = compileStructClosures(this, name);
+		this.decoders.set(name, decoder);
+		return decoder;
 	}
 
 	/** Decode without runtime code generation, including in CSP-restricted environments. */

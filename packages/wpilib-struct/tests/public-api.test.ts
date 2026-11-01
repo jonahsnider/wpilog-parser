@@ -44,8 +44,8 @@ describe('standalone registry', () => {
 	});
 });
 
-for (const codeGeneration of [true, false]) {
-	describe(`decoding (codeGeneration: ${codeGeneration})`, () => {
+for (const codeGeneration of [true, false, 'function', 'closures'] as const) {
+	describe(`decoding (codeGeneration: ${JSON.stringify(codeGeneration)})`, () => {
 		test('preserves bigint fidelity, single-element arrays, UTF-8 and NUL bytes', () => {
 			const registry = new StructRegistry({ codeGeneration });
 			registry.register('Inner', 'int64 signed;uint64 unsigned;char text[4];uint8 one[1]');
@@ -77,17 +77,19 @@ for (const codeGeneration of [true, false]) {
 	});
 }
 
-describe('explicit interpreter policy', { concurrent: false }, () => {
+describe('explicit interpreter and closures policies', { concurrent: false }, () => {
 	afterEach(() => vi.restoreAllMocks());
 
-	test('never probes or invokes the Function constructor', () => {
+	test('never probes or invokes the Function constructor for false or closures', () => {
 		const constructor = vi.spyOn(globalThis, 'Function').mockImplementation(function () {
 			throw new Error('Code generation must not be attempted');
 		});
-		const registry = new StructRegistry({ codeGeneration: false });
-		registry.register('Value', 'uint8 value');
-		expect(registry.decode('Value', new Uint8Array([42]))).toEqual({ value: 42 });
-		expect(registry.decodeArray('Value', new Uint8Array([1, 2]))).toEqual([{ value: 1 }, { value: 2 }]);
+		for (const codeGeneration of [false, 'closures'] as const) {
+			const registry = new StructRegistry({ codeGeneration });
+			registry.register('Value', 'uint8 value');
+			expect(registry.decode('Value', new Uint8Array([42]))).toEqual({ value: 42 });
+			expect(registry.decodeArray('Value', new Uint8Array([1, 2]))).toEqual([{ value: 1 }, { value: 2 }]);
+		}
 		expect(constructor).not.toHaveBeenCalled();
 	});
 });

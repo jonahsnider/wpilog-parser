@@ -84,6 +84,10 @@ export class StructRegistry {
     decode(structName: string, payload: Uint8Array, offset?: number): StructPayload | string;
     decodeArray(structName: string, payload: Uint8Array): StructPayload[] | string;
     decodeInterpreted(structName: string, payload: Uint8Array, offset?: number): StructPayload | string;
+    encode(structName: string, value: StructPayload): Uint8Array | string;
+    encodeArray(structName: string, values: StructPayload[]): Uint8Array | string;
+    encodeInterpreted(structName: string, value: StructPayload): Uint8Array | string;
+    encodeInto(structName: string, value: StructPayload, payload: Uint8Array, offset?: number): number | string;
     getByteLength(name: string): number | string;
     getDecodableStructs(): string[];
     // (undocumented)

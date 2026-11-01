@@ -35,7 +35,7 @@
 		"test": "vp test run"
 	},
 	"devDependencies": {
-		"@microsoft/api-extractor": "7.60.0",
+		"@microsoft/api-extractor": "7.60.1",
 		"vite-plus": "catalog:",
 		"vitest": "catalog:"
 	},

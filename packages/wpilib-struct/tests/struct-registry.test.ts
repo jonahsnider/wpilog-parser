@@ -54,6 +54,24 @@ for (const mode of ['generated', 'CSP'] as const) {
 				});
 			});
 			afterEach(() => vi.restoreAllMocks());
+
+			test('uses CSP-safe closures instead of the interpreter', () => {
+				const interpretedAt = vi.spyOn(
+					StructRegistry.prototype as unknown as { decodeInterpretedAt: () => unknown },
+					'decodeInterpretedAt',
+				);
+				const closures = new StructRegistry({ codeGeneration: 'closures' });
+				const registry = new StructRegistry();
+				for (const target of [closures, registry]) {
+					target.register('Inner', 'uint8 value');
+					target.register('Outer', 'Inner inner;uint8 tail');
+				}
+				const bytes = new Uint8Array([7, 8]);
+				expect(registry.decode('Outer', bytes)).toStrictEqual({ inner: { value: 7 }, tail: 8 });
+				expect(registry.decode('Outer', bytes)).toStrictEqual(closures.decode('Outer', bytes));
+				expect(registry.decodeArray('Outer', bytes)).toStrictEqual(closures.decodeArray('Outer', bytes));
+				expect(interpretedAt).not.toHaveBeenCalled();
+			});
 		}
 		test.for([
 			{ name: 'scalar', definition: 'uint8 __proto__', bytes: [1], expected: 1 },
@@ -259,10 +277,14 @@ describe('runtime compilation', { concurrent: false }, () => {
 		expect(constructor).toHaveBeenCalledTimes(compilationCalls);
 	});
 
-	test('probes a CSP restriction once and keeps decoding other schemas', () => {
+	test('probes a CSP restriction once and falls back to closures', () => {
 		const constructor = vi.spyOn(globalThis, 'Function').mockImplementation(function () {
 			throw new EvalError('Code generation disallowed by CSP');
 		});
+		const interpretedAt = vi.spyOn(
+			StructRegistry.prototype as unknown as { decodeInterpretedAt: () => unknown },
+			'decodeInterpretedAt',
+		);
 		const registry = new StructRegistry();
 		registry.register('Value', 'uint8 value');
 		registry.register('Other', 'uint16 value');
@@ -270,15 +292,34 @@ describe('runtime compilation', { concurrent: false }, () => {
 		expect(registry.decode('Other', new Uint8Array([2, 3]))).toStrictEqual({ value: 770 });
 		expect(registry.decodeArray('Value', new Uint8Array([3, 4]))).toStrictEqual([{ value: 3 }, { value: 4 }]);
 		expect(constructor).toHaveBeenCalledTimes(1);
+		expect(interpretedAt).not.toHaveBeenCalled();
 	});
 
-	test('uses the interpreter if compilation is denied after the capability probe', () => {
+	test('falls back to closures if compilation is denied after the capability probe', () => {
 		const nativeFunction = globalThis.Function;
 		const constructor = vi.spyOn(globalThis, 'Function').mockImplementation(function (...args) {
 			if (args.length === 1 && args[0] === '') return nativeFunction(...args);
 			throw new EvalError('Code generation disallowed by CSP');
 		});
+		const interpretedAt = vi.spyOn(
+			StructRegistry.prototype as unknown as { decodeInterpretedAt: () => unknown },
+			'decodeInterpretedAt',
+		);
 		const registry = new StructRegistry();
+		registry.register('Value', 'uint8 value');
+		expect(registry.decode('Value', new Uint8Array([1]))).toStrictEqual({ value: 1 });
+		expect(registry.decode('Value', new Uint8Array([2]))).toStrictEqual({ value: 2 });
+		expect(constructor).toHaveBeenCalledTimes(2);
+		expect(interpretedAt).not.toHaveBeenCalled();
+	});
+
+	test('uses the interpreter when function-only mode fails after the capability probe', () => {
+		const nativeFunction = globalThis.Function;
+		const constructor = vi.spyOn(globalThis, 'Function').mockImplementation(function (...args) {
+			if (args.length === 1 && args[0] === '') return nativeFunction(...args);
+			throw new EvalError('Code generation disallowed by CSP');
+		});
+		const registry = new StructRegistry({ codeGeneration: 'function' });
 		registry.register('Value', 'uint8 value');
 		expect(registry.decode('Value', new Uint8Array([1]))).toStrictEqual({ value: 1 });
 		expect(registry.decode('Value', new Uint8Array([2]))).toStrictEqual({ value: 2 });
@@ -295,5 +336,23 @@ describe('runtime compilation', { concurrent: false }, () => {
 		const registry = new StructRegistry();
 		registry.register('Value', 'uint8 value');
 		expect(() => registry.decode('Value', new Uint8Array([1]))).toThrow(error);
+	});
+
+	test.for([
+		{ label: 'true', codeGeneration: true as const },
+		{ label: "'function'", codeGeneration: 'function' as const },
+		{ label: "'closures'", codeGeneration: 'closures' as const },
+		{ label: 'false', codeGeneration: false as const },
+	])('honors codeGeneration: $label', ({ codeGeneration }) => {
+		const constructor = vi.spyOn(globalThis, 'Function');
+		const registry = new StructRegistry({ codeGeneration });
+		registry.register('Value', 'uint8 value');
+		expect(registry.decode('Value', new Uint8Array([7]))).toStrictEqual({ value: 7 });
+		expect(registry.decodeArray('Value', new Uint8Array([8, 9]))).toStrictEqual([{ value: 8 }, { value: 9 }]);
+		if (codeGeneration === false || codeGeneration === 'closures') {
+			expect(constructor).not.toHaveBeenCalled();
+		} else {
+			expect(constructor).toHaveBeenCalled();
+		}
 	});
 });

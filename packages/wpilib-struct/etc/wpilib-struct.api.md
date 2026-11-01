@@ -96,7 +96,7 @@ export class StructRegistry {
 
 // @public
 export type StructRegistryOptions = {
-    codeGeneration?: boolean;
+    codeGeneration?: boolean | 'function' | 'closures';
 };
 
 // @public (undocumented)

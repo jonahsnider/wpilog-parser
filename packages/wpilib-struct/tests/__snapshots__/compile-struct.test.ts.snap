@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`compiled struct decoder > ControlWord matches the interpreter > ControlWord 1`] = `
+exports[`compiled struct decoder > ControlWord matches closure compilation > ControlWord 1`] = `
 [
   [
     "textDecoder",
@@ -19,7 +19,7 @@ const v5 = ((view.getBigUint64(base + 0, true) >> 61n) & 1n) !== 0n;
 ]
 `;
 
-exports[`compiled struct decoder > Pose2d matches the interpreter > Pose2d 1`] = `
+exports[`compiled struct decoder > Pose2d matches closure compilation > Pose2d 1`] = `
 [
   [
     "textDecoder",
@@ -43,7 +43,7 @@ const v1 = s2(view, bytes, base + 16);
 ]
 `;
 
-exports[`compiled struct decoder > SwerveStates matches the interpreter > SwerveStates 1`] = `
+exports[`compiled struct decoder > SwerveStates matches closure compilation > SwerveStates 1`] = `
 [
   [
     "textDecoder",
@@ -68,7 +68,7 @@ const v0 = a0;
 ]
 `;
 
-exports[`compiled struct decoder > Translation2d matches the interpreter > Translation2d 1`] = `
+exports[`compiled struct decoder > Translation2d matches closure compilation > Translation2d 1`] = `
 [
   [
     "textDecoder",

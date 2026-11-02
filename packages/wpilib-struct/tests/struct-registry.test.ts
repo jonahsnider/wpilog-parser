@@ -44,8 +44,8 @@ describe('calculate byte size', () => {
 	});
 });
 
-for (const mode of ['generated', 'CSP'] as const) {
-	describe(`decode structs (${mode})`, { concurrent: mode === 'generated' }, () => {
+for (const mode of ['generated', 'closures', 'CSP']) {
+	describe(`decode structs (${mode})`, { concurrent: mode !== 'CSP' }, () => {
 		// CSP cases replace the global Function constructor and must run sequentially.
 		if (mode === 'CSP') {
 			beforeEach(() => {
@@ -65,7 +65,7 @@ for (const mode of ['generated', 'CSP'] as const) {
 				expected: [{ ['__proto__']: 1 }, { ['__proto__']: 2 }],
 			},
 		])('preserves arbitrary field names for $name values', (fixture, { expect }) => {
-			const registry = new StructRegistry();
+			const registry = new StructRegistry({ codeGeneration: mode !== 'closures' });
 			registry.register('Inner', 'uint8 __proto__');
 			registry.register(
 				'Names',
@@ -101,7 +101,7 @@ for (const mode of ['generated', 'CSP'] as const) {
 			{ name: 'negative infinity', value: -Infinity },
 			{ name: 'negative zero', value: -0 },
 		])('preserves $name in object fields', ({ value }, { expect }) => {
-			const registry = new StructRegistry();
+			const registry = new StructRegistry({ codeGeneration: mode !== 'closures' });
 			registry.register('Value', 'double value');
 			const bytes = new Uint8Array(8);
 			new DataView(bytes.buffer).setFloat64(0, value, true);
@@ -109,7 +109,7 @@ for (const mode of ['generated', 'CSP'] as const) {
 		});
 
 		test('char array (string)', ({ expect }) => {
-			const registry = new StructRegistry();
+			const registry = new StructRegistry({ codeGeneration: mode !== 'closures' });
 			registry.register('MyStruct', 'char string[4]');
 
 			const buffer = new Uint8Array([0b01100001, 0b01100010, 0b01100011, 0b01100100]);
@@ -117,7 +117,7 @@ for (const mode of ['generated', 'CSP'] as const) {
 		});
 
 		test('nested structs', ({ expect }) => {
-			const registry = new StructRegistry();
+			const registry = new StructRegistry({ codeGeneration: mode !== 'closures' });
 			registry.register('Inner', 'int16 i;\nint8 x;');
 			registry.register('Outer', 'char c;\nInner s;\nbool b;');
 
@@ -137,7 +137,7 @@ for (const mode of ['generated', 'CSP'] as const) {
 		});
 
 		test('control word bit fields', ({ expect }) => {
-			const registry = new StructRegistry();
+			const registry = new StructRegistry({ codeGeneration: mode !== 'closures' });
 			registry.register(
 				'ControlWord',
 				'uint64 opModeHash:56;uint64 robotMode:2;bool enabled:1;bool eStop:1;bool fmsAttached:1;bool dsAttached:1',
@@ -158,7 +158,7 @@ for (const mode of ['generated', 'CSP'] as const) {
 		});
 
 		test('starts new storage when the type changes or a field does not fit', ({ expect }) => {
-			const registry = new StructRegistry();
+			const registry = new StructRegistry({ codeGeneration: mode !== 'closures' });
 			registry.register('MyStruct', 'uint8 low:4;uint8 high:4;uint16 wide:9;bool flag:1;uint8 next');
 
 			const buffer = new Uint8Array([0xba, 0x01, 0x03, 0x7f]);
@@ -174,14 +174,14 @@ for (const mode of ['generated', 'CSP'] as const) {
 		});
 
 		test('sign extends signed bit fields', ({ expect }) => {
-			const registry = new StructRegistry();
+			const registry = new StructRegistry({ codeGeneration: mode !== 'closures' });
 			registry.register('MyStruct', 'int8 value:4');
 
 			expect(registry.decode('MyStruct', new Uint8Array([0b1101]))).toStrictEqual({ value: -3 });
 		});
 
 		test('waits for missing dependencies without consuming bytes', ({ expect }) => {
-			const registry = new StructRegistry();
+			const registry = new StructRegistry({ codeGeneration: mode !== 'closures' });
 			registry.register('Outer', 'uint8 prefix;Inner value');
 			expect(registry.decode('Outer', new Uint8Array([42, 7]), 0)).toBe('Inner');
 			expect(registry.decodeArray('Outer', new Uint8Array([42, 7]))).toBe('Inner');
@@ -191,7 +191,7 @@ for (const mode of ['generated', 'CSP'] as const) {
 		});
 
 		test('invalidates enclosing decoders and array strides when a schema changes', ({ expect }) => {
-			const registry = new StructRegistry();
+			const registry = new StructRegistry({ codeGeneration: mode !== 'closures' });
 			registry.register('Inner', 'uint8 value');
 			registry.register('Outer', 'Inner inner;uint8 tail');
 			expect(registry.decodeArray('Outer', new Uint8Array([1, 2]))).toStrictEqual([{ inner: { value: 1 }, tail: 2 }]);
@@ -211,7 +211,7 @@ for (const mode of ['generated', 'CSP'] as const) {
 		});
 
 		test('preserves subarray boundaries and accepts a byte offset', ({ expect }) => {
-			const registry = new StructRegistry();
+			const registry = new StructRegistry({ codeGeneration: mode !== 'closures' });
 			registry.register('Inner', 'int8 value:4');
 			registry.register('Outer', 'Inner inner;uint16 tail');
 			const bytes = new Uint8Array([99, 42, 0x0d, 0x01, 0x02, 99]).subarray(1, 5);
@@ -220,7 +220,7 @@ for (const mode of ['generated', 'CSP'] as const) {
 		});
 
 		test('handles full-width and plain declarations after packed fields', ({ expect }) => {
-			const registry = new StructRegistry();
+			const registry = new StructRegistry({ codeGeneration: mode !== 'closures' });
 			registry.register('Bits', 'uint8 packed:4;uint8 full:8;int16 plain');
 			expect(registry.getByteLength('Bits')).toBe(4);
 			expect(registry.decode('Bits', new Uint8Array([3, 255, 0xfe, 0xff]))).toStrictEqual({
@@ -231,7 +231,7 @@ for (const mode of ['generated', 'CSP'] as const) {
 		});
 
 		test('handles empty structs and rejects nonempty arrays with a zero stride', ({ expect }) => {
-			const registry = new StructRegistry();
+			const registry = new StructRegistry({ codeGeneration: mode !== 'closures' });
 			registry.register('Empty', '');
 			expect(registry.decode('Empty', new Uint8Array())).toStrictEqual({});
 			expect(registry.decodeArray('Empty', new Uint8Array())).toStrictEqual([]);
@@ -259,7 +259,7 @@ describe('runtime compilation', { concurrent: false }, () => {
 		expect(constructor).toHaveBeenCalledTimes(compilationCalls);
 	});
 
-	test('probes a CSP restriction once and keeps decoding other schemas', () => {
+	test('probes a CSP restriction once and falls back to closures', () => {
 		const constructor = vi.spyOn(globalThis, 'Function').mockImplementation(function () {
 			throw new EvalError('Code generation disallowed by CSP');
 		});
@@ -272,7 +272,7 @@ describe('runtime compilation', { concurrent: false }, () => {
 		expect(constructor).toHaveBeenCalledTimes(1);
 	});
 
-	test('uses the interpreter if compilation is denied after the capability probe', () => {
+	test('falls back to closures if compilation is denied after the capability probe', () => {
 		const nativeFunction = globalThis.Function;
 		const constructor = vi.spyOn(globalThis, 'Function').mockImplementation(function (...args) {
 			if (args.length === 1 && args[0] === '') return nativeFunction(...args);
@@ -295,5 +295,18 @@ describe('runtime compilation', { concurrent: false }, () => {
 		const registry = new StructRegistry();
 		registry.register('Value', 'uint8 value');
 		expect(() => registry.decode('Value', new Uint8Array([1]))).toThrow(error);
+	});
+
+	test.for([true, false])('honors codeGeneration: %s', (codeGeneration) => {
+		const constructor = vi.spyOn(globalThis, 'Function');
+		const registry = new StructRegistry({ codeGeneration });
+		registry.register('Value', 'uint8 value');
+		expect(registry.decode('Value', new Uint8Array([7]))).toStrictEqual({ value: 7 });
+		expect(registry.decodeArray('Value', new Uint8Array([8, 9]))).toStrictEqual([{ value: 8 }, { value: 9 }]);
+		if (codeGeneration === false) {
+			expect(constructor).not.toHaveBeenCalled();
+		} else {
+			expect(constructor).toHaveBeenCalled();
+		}
 	});
 });

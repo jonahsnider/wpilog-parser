@@ -66,7 +66,6 @@ for (const codeGeneration of [true, false]) {
 			const registry = new StructRegistry({ codeGeneration });
 			registry.register('Text', 'char value[4]');
 			expect(() => registry.decode('Text', new Uint8Array(3))).toThrowError(RangeError);
-			expect(() => registry.decodeInterpreted('Text', new Uint8Array(3))).toThrowError(RangeError);
 			expect(() => registry.decodeArray('Text', new Uint8Array(5))).toThrowError(RangeError);
 			expect(registry.decodeArray('Text', new Uint8Array())).toEqual([]);
 			for (const offset of [-1, 0.5, NaN, Infinity, 2]) {
@@ -77,10 +76,10 @@ for (const codeGeneration of [true, false]) {
 	});
 }
 
-describe('explicit interpreter policy', { concurrent: false }, () => {
+describe('explicit closure compilation', { concurrent: false }, () => {
 	afterEach(() => vi.restoreAllMocks());
 
-	test('never probes or invokes the Function constructor', () => {
+	test('never probes or invokes the Function constructor when codeGeneration is false', () => {
 		const constructor = vi.spyOn(globalThis, 'Function').mockImplementation(function () {
 			throw new Error('Code generation must not be attempted');
 		});

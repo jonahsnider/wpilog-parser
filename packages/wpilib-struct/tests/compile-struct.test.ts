@@ -1,6 +1,7 @@
 import type { StructPayload } from '../src/types.ts';
 import { describe, expect, test, vi } from 'vite-plus/test';
 import { StructRegistry } from '../src/struct-registry.ts';
+import { compileStructClosures } from '../src/compile-struct-closures.ts';
 import { compileStruct } from '../src/compile-struct.ts';
 import { createStructFixture, STRUCT_FIXTURES } from './helpers/struct-fixtures.ts';
 
@@ -17,15 +18,24 @@ function compileAndSnapshot(registry: StructRegistry, name: string) {
 	}
 }
 
+function expectDecodersMatch(registry: StructRegistry, name: string, bytes: Uint8Array, expected: StructPayload) {
+	const generated = compileStruct(registry, name);
+	const closures = compileStructClosures(registry, name);
+	const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+	expect(generated(view, bytes, 0)).toStrictEqual(expected);
+	expect(closures(view, bytes, 0)).toStrictEqual(expected);
+}
+
 describe('compiled struct decoder', { concurrent: false }, () => {
 	// Source snapshots spy on the global Function constructor and run sequentially.
-	test.for(STRUCT_FIXTURES)('$name matches the interpreter', (fixture) => {
+	test.for(STRUCT_FIXTURES)('$name matches closure compilation', (fixture) => {
 		const { registry, payloads } = createStructFixture(fixture);
 		const decoder = compileAndSnapshot(registry, fixture.name);
+		const closures = compileStructClosures(registry, fixture.name);
 		for (const bytes of payloads) {
-			const expected = registry.decodeInterpreted(fixture.name, bytes);
-			if (typeof expected === 'string') throw new TypeError(`Missing schema: ${expected}`);
-			expect(decoder(new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), bytes, 0)).toStrictEqual(expected);
+			const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+			const expected = closures(view, bytes, 0);
+			expect(decoder(view, bytes, 0)).toStrictEqual(expected);
 		}
 	});
 
@@ -73,6 +83,7 @@ describe('compiled struct decoder', { concurrent: false }, () => {
 			values: [-2, 3],
 		};
 		expect(registry.decode('AllTypes', bytes)).toStrictEqual(expected);
+		expectDecodersMatch(registry, 'AllTypes', bytes, expected);
 	});
 
 	test('bit fields cross storage boundaries and sign extend', () => {
@@ -85,18 +96,23 @@ describe('compiled struct decoder', { concurrent: false }, () => {
 		bytes[11] = 127;
 		const expected = { low: -3, high: 11, wide: 257, flag: true, signed: -3n, tail: 127 };
 		expect(registry.decode('Bits', bytes)).toStrictEqual(expected);
+		expectDecodersMatch(registry, 'Bits', bytes, expected);
 	});
 
 	test('treats unusual field names as own properties', () => {
 		const registry = new StructRegistry();
 		registry.register('Names', 'uint8 __proto__;uint8 constructor;uint8 default');
 		compileAndSnapshot(registry, 'Names');
-		const decoded = registry.decode('Names', new Uint8Array([1, 2, 3])) as StructPayload;
-		expect(Object.entries(decoded)).toStrictEqual([
+		const bytes = new Uint8Array([1, 2, 3]);
+		const decoded = registry.decode('Names', bytes) as StructPayload;
+		const expected = [
 			['__proto__', 1],
 			['constructor', 2],
 			['default', 3],
-		]);
+		];
+		expect(Object.entries(decoded)).toStrictEqual(expected);
+		const closures = compileStructClosures(registry, 'Names');
+		expect(Object.entries(closures(new DataView(bytes.buffer), bytes, 0))).toStrictEqual(expected);
 	});
 
 	test('accounts for trailing bit-field storage in nested arrays', () => {
@@ -114,6 +130,7 @@ describe('compiled struct decoder', { concurrent: false }, () => {
 			tail: 255,
 		};
 		expect(registry.decode('Outer', bytes)).toStrictEqual(expected);
+		expectDecodersMatch(registry, 'Outer', bytes, expected);
 	});
 
 	test.concurrent('rejects truncated numeric payloads', ({ expect }) => {

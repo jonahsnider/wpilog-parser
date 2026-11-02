@@ -44,8 +44,8 @@ describe('standalone registry', () => {
 	});
 });
 
-for (const codeGeneration of [true, false] as const) {
-	describe(`decoding (codeGeneration: ${JSON.stringify(codeGeneration)})`, () => {
+for (const codeGeneration of [true, false]) {
+	describe(`decoding (codeGeneration: ${codeGeneration})`, () => {
 		test('preserves bigint fidelity, single-element arrays, UTF-8 and NUL bytes', () => {
 			const registry = new StructRegistry({ codeGeneration });
 			registry.register('Inner', 'int64 signed;uint64 unsigned;char text[4];uint8 one[1]');

@@ -44,7 +44,7 @@ describe('calculate byte size', () => {
 	});
 });
 
-for (const mode of ['generated', 'closures', 'CSP'] as const) {
+for (const mode of ['generated', 'closures', 'CSP']) {
 	describe(`decode structs (${mode})`, { concurrent: mode !== 'CSP' }, () => {
 		// CSP cases replace the global Function constructor and must run sequentially.
 		if (mode === 'CSP') {
@@ -297,10 +297,7 @@ describe('runtime compilation', { concurrent: false }, () => {
 		expect(() => registry.decode('Value', new Uint8Array([1]))).toThrow(error);
 	});
 
-	test.for([
-		{ label: 'true', codeGeneration: true as const },
-		{ label: 'false', codeGeneration: false as const },
-	])('honors codeGeneration: $label', ({ codeGeneration }) => {
+	test.for([true, false])('honors codeGeneration: %s', (codeGeneration) => {
 		const constructor = vi.spyOn(globalThis, 'Function');
 		const registry = new StructRegistry({ codeGeneration });
 		registry.register('Value', 'uint8 value');

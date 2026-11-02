@@ -43,18 +43,16 @@ export function compileStructClosures(registry: StructRegistry, name: string): C
 			return (_view, bytes, base) => textDecoder.decode(bytes.subarray(base + offset, base + offset + length));
 		}
 
-		const nested = reader ? undefined : compile(member.value);
-		const readOne = (view: DataView, bytes: Uint8Array, at: number) => {
-			if (!reader) return nested!(view, bytes, at);
-			return reader.read(view, at);
-		};
+		const readOne = reader
+			? (view: DataView, _bytes: Uint8Array, at: number) => reader.read(view, at)
+			: compile(member.value);
 		if (member.arraySize === undefined) {
 			return (view, bytes, base) => readOne(view, bytes, base + offset);
 		}
 
 		const arraySize = member.arraySize;
 		return (view, bytes, base) => {
-			const values: NonNullable<StructPayload[string]>[] = [];
+			const values = [];
 			for (let i = 0; i < arraySize; i++) values.push(readOne(view, bytes, base + offset + i * size));
 			return values as StructPayload[string];
 		};
@@ -71,25 +69,6 @@ export function compileStructClosures(registry: StructRegistry, name: string): C
 		const fields: Array<{ name: string; read: FieldReader }> = [];
 		const bitFields = new BitFieldTracker();
 		let offset = 0;
-
-		// Insert a placeholder so recursive lookups within this compilation reuse the same decoder.
-		const decoder: CompiledStructDecoder = (view, bytes, base) => {
-			const result: StructPayload = {};
-			for (const field of fields) {
-				if (field.name === '__proto__') {
-					Object.defineProperty(result, field.name, {
-						value: field.read(view, bytes, base),
-						enumerable: true,
-						writable: true,
-						configurable: true,
-					});
-					continue;
-				}
-				result[field.name] = field.read(view, bytes, base);
-			}
-			return result;
-		};
-		functions.set(structName, decoder);
 
 		for (const member of registry.getDefinition(structName)) {
 			const reader = Object.hasOwn(READERS, member.value) ? READERS[member.value] : undefined;
@@ -110,6 +89,24 @@ export function compileStructClosures(registry: StructRegistry, name: string): C
 
 			fields.push({ name: member.name, read });
 		}
+
+		const decoder: CompiledStructDecoder = (view, bytes, base) => {
+			const result: StructPayload = {};
+			for (const field of fields) {
+				if (field.name === '__proto__') {
+					Object.defineProperty(result, field.name, {
+						value: field.read(view, bytes, base),
+						enumerable: true,
+						writable: true,
+						configurable: true,
+					});
+					continue;
+				}
+				result[field.name] = field.read(view, bytes, base);
+			}
+			return result;
+		};
+		functions.set(structName, decoder);
 
 		return decoder;
 	}

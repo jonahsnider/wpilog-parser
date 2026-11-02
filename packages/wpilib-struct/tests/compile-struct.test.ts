@@ -105,17 +105,14 @@ describe('compiled struct decoder', { concurrent: false }, () => {
 		compileAndSnapshot(registry, 'Names');
 		const bytes = new Uint8Array([1, 2, 3]);
 		const decoded = registry.decode('Names', bytes) as StructPayload;
-		expect(Object.entries(decoded)).toStrictEqual([
+		const expected = [
 			['__proto__', 1],
 			['constructor', 2],
 			['default', 3],
-		]);
+		];
+		expect(Object.entries(decoded)).toStrictEqual(expected);
 		const closures = compileStructClosures(registry, 'Names');
-		expect(Object.entries(closures(new DataView(bytes.buffer), bytes, 0))).toStrictEqual([
-			['__proto__', 1],
-			['constructor', 2],
-			['default', 3],
-		]);
+		expect(Object.entries(closures(new DataView(bytes.buffer), bytes, 0))).toStrictEqual(expected);
 	});
 
 	test('accounts for trailing bit-field storage in nested arrays', () => {

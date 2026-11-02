@@ -18,12 +18,11 @@ export class StructRegistry {
 	private readonly definitions = new Map<string, StructSpecification>();
 	private readonly byteLengths = new Map<string, number>();
 	private readonly decoders = new Map<string, CompiledStructDecoder>();
-	private readonly codeGeneration: boolean;
-	private functionGenerationAllowed?: boolean;
+	private codeGenerationAllowed?: boolean;
 	private readonly graph = new StructDependencyGraph();
 
 	constructor(options: StructRegistryOptions = {}) {
-		this.codeGeneration = options.codeGeneration ?? true;
+		if (options.codeGeneration === false) this.codeGenerationAllowed = false;
 	}
 
 	register(name: string, definition: string): void {
@@ -93,18 +92,16 @@ export class StructRegistry {
 		const existing = this.decoders.get(name);
 		if (existing) return existing;
 
-		if (this.codeGeneration) {
-			this.functionGenerationAllowed ??= allowsCodeGeneration();
-			if (this.functionGenerationAllowed) {
-				try {
-					const decoder = compileStruct(this, name);
-					this.decoders.set(name, decoder);
-					return decoder;
-				} catch (error) {
-					// Also handle a policy change between the probe and compilation.
-					if (!(error instanceof EvalError)) throw error;
-					this.functionGenerationAllowed = false;
-				}
+		this.codeGenerationAllowed ??= allowsCodeGeneration();
+		if (this.codeGenerationAllowed) {
+			try {
+				const decoder = compileStruct(this, name);
+				this.decoders.set(name, decoder);
+				return decoder;
+			} catch (error) {
+				// Also handle a policy change between the probe and compilation.
+				if (!(error instanceof EvalError)) throw error;
+				this.codeGenerationAllowed = false;
 			}
 		}
 

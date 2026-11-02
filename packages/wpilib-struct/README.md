@@ -31,7 +31,6 @@ Use `decodeArray()` to decode an array of structs, passing the base schema name 
 Schemas can be registered in any order. If a schema is missing, decoding returns its name instead of a decoded value.
 
 Reuse a registry for repeated decoding. Schemas are compiled lazily into reusable decoders.
-By default the registry uses `new Function` compilation, with CSP-safe closures when runtime code generation is blocked.
-Use `new StructRegistry({ codeGeneration: false })` to always use closures without attempting `new Function`.
+In environments where Content Security Policy blocks runtime code generation, decoding falls back to a CSP-safe implementation.
 
 A summary of the full API is available in [wpilib-struct.api.md](https://github.com/jonahsnider/wpilog-parser/blob/main/packages/wpilib-struct/etc/wpilib-struct.api.md).

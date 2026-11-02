@@ -28,15 +28,11 @@ for (const fixture of FIXTURES) {
 		});
 
 		test('decodeRecords', async ({ bench }) => {
-			const decode = () => {
+			await bench('decodeRecords', () => {
 				for (const _record of decodeRecords(readRecords(fixture.bytes))) {
 					// discard
 				}
-			};
-			await bench.compare(
-				bench('decodeRecords', decode),
-				bench('interpreted decodeRecords', INTERPRETED_STRUCTS, decode),
-			);
+			}).run();
 		});
 
 		test('parseDataLog', async ({ bench }) => {

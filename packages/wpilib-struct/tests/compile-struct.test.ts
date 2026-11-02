@@ -24,21 +24,18 @@ function expectDecodersMatch(registry: StructRegistry, name: string, bytes: Uint
 	const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
 	expect(generated(view, bytes, 0)).toStrictEqual(expected);
 	expect(closures(view, bytes, 0)).toStrictEqual(expected);
-	expect(registry.decodeInterpreted(name, bytes)).toStrictEqual(expected);
 }
 
 describe('compiled struct decoder', { concurrent: false }, () => {
 	// Source snapshots spy on the global Function constructor and run sequentially.
-	test.for(STRUCT_FIXTURES)('$name matches the interpreter', (fixture) => {
+	test.for(STRUCT_FIXTURES)('$name matches closure compilation', (fixture) => {
 		const { registry, payloads } = createStructFixture(fixture);
 		const decoder = compileAndSnapshot(registry, fixture.name);
 		const closures = compileStructClosures(registry, fixture.name);
 		for (const bytes of payloads) {
-			const expected = registry.decodeInterpreted(fixture.name, bytes);
-			if (typeof expected === 'string') throw new TypeError(`Missing schema: ${expected}`);
 			const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+			const expected = closures(view, bytes, 0);
 			expect(decoder(view, bytes, 0)).toStrictEqual(expected);
-			expect(closures(view, bytes, 0)).toStrictEqual(expected);
 		}
 	});
 
@@ -143,23 +140,5 @@ describe('compiled struct decoder', { concurrent: false }, () => {
 		const registry = new StructRegistry();
 		registry.register('Value', 'double value');
 		expect(() => registry.decode('Value', new Uint8Array(7))).toThrow(RangeError);
-	});
-});
-
-describe('closure compiled struct decoder', () => {
-	test.for(STRUCT_FIXTURES)('$name matches compileStruct and the interpreter', (fixture) => {
-		const { registry, payloads } = createStructFixture(fixture);
-		const generated = compileStruct(registry, fixture.name);
-		const closures = compileStructClosures(registry, fixture.name);
-		const closureRegistry = new StructRegistry({ codeGeneration: 'closures' });
-		for (const [name, schema] of Object.entries(fixture.schemas)) closureRegistry.register(name, schema);
-		for (const bytes of payloads) {
-			const expected = registry.decodeInterpreted(fixture.name, bytes);
-			if (typeof expected === 'string') throw new TypeError(`Missing schema: ${expected}`);
-			const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-			expect(closures(view, bytes, 0)).toStrictEqual(expected);
-			expect(generated(view, bytes, 0)).toStrictEqual(expected);
-			expect(closureRegistry.decode(fixture.name, bytes)).toStrictEqual(expected);
-		}
 	});
 });

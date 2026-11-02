@@ -1,31 +1,24 @@
-import { ByteOffset } from './byte-offset.ts';
 import { diagnostics } from './errors.ts';
 import type { StructPayload } from './types.ts';
-import { BitFieldTracker, decodeBitField } from './bit-field.ts';
+import { BitFieldTracker } from './bit-field.ts';
 import { compileStructClosures } from './compile-struct-closures.ts';
 import { allowsCodeGeneration, compileStruct, type CompiledStructDecoder } from './compile-struct.ts';
 import { parseStructSpecification } from './parse-struct.ts';
 import { StructDependencyGraph } from './struct-dependency-graph.ts';
 import { KnownStructTypeName, type StructDeclaration, type StructSpecification } from './types.ts';
 
-/**
- * Decoder policy. Defaults to `true`: try `new Function`, then CSP-safe closures, then interpreter.
- * - `true` / omitted: try `new Function`, then closures, then interpreter
- * - `'function'`: only `new Function`; on failure use the interpreter
- * - `'closures'`: only CSP-safe closure compilation
- * - `false`: interpreter only
- */
+/** Options for runtime code generation. */
 export type StructRegistryOptions = {
-	codeGeneration?: boolean | 'function' | 'closures';
+	/** Use `new Function` when available. Defaults to `true`; `false` uses CSP-safe closures. */
+	codeGeneration?: boolean;
 };
 
 /** Reusable schemas, dependency resolution, layout sizes, and decoders. */
 export class StructRegistry {
-	private static readonly TEXT_DECODER = new TextDecoder('utf-8');
 	private readonly definitions = new Map<string, StructSpecification>();
 	private readonly byteLengths = new Map<string, number>();
 	private readonly decoders = new Map<string, CompiledStructDecoder>();
-	private readonly codeGeneration: boolean | 'function' | 'closures';
+	private readonly codeGeneration: boolean;
 	private functionGenerationAllowed?: boolean;
 	private readonly graph = new StructDependencyGraph();
 
@@ -73,20 +66,13 @@ export class StructRegistry {
 			throw new RangeError('Struct array payload length must be a multiple of the struct byte length');
 		}
 		const elements = payload.byteLength / structByteLengthOrBlocker;
-		const offset = new ByteOffset();
 		const decoder = this.getDecoder(structName);
 		const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
 
 		const result: StructPayload[] = [];
 
 		for (let i = 0; i < elements; i++) {
-			const decoded = decoder
-				? decoder(view, payload, i * structByteLengthOrBlocker)
-				: this.decodeInterpretedAt(structName, payload, offset);
-			if (typeof decoded === 'string') {
-				throw new TypeError(`Expected struct ${structName} to be defined if the byte length calculation succeeded`);
-			}
-			result.push(decoded);
+			result.push(decoder(view, payload, i * structByteLengthOrBlocker));
 		}
 
 		return result;
@@ -98,26 +84,16 @@ export class StructRegistry {
 		if (typeof byteLength === 'string') return byteLength;
 		this.validatePayload(payload, offset, byteLength);
 		const decoder = this.getDecoder(structName);
-		if (!decoder) return this.decodeInterpretedAt(structName, payload, new ByteOffset(offset));
 
 		const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
 		return decoder(view, payload, offset);
 	}
 
-	private getDecoder(name: string): CompiledStructDecoder | undefined {
-		if (this.codeGeneration === false) return undefined;
-
+	private getDecoder(name: string): CompiledStructDecoder {
 		const existing = this.decoders.get(name);
 		if (existing) return existing;
 
-		if (this.codeGeneration === 'closures') {
-			const decoder = compileStructClosures(this, name);
-			this.decoders.set(name, decoder);
-			return decoder;
-		}
-
-		const preferFunction = this.codeGeneration === true || this.codeGeneration === 'function';
-		if (preferFunction) {
+		if (this.codeGeneration) {
 			this.functionGenerationAllowed ??= allowsCodeGeneration();
 			if (this.functionGenerationAllowed) {
 				try {
@@ -132,240 +108,15 @@ export class StructRegistry {
 			}
 		}
 
-		// `'function'` falls back to the interpreter; default/`true` uses CSP-safe closures.
-		if (this.codeGeneration === 'function') return undefined;
-
 		const decoder = compileStructClosures(this, name);
 		this.decoders.set(name, decoder);
 		return decoder;
-	}
-
-	/** Decode without runtime code generation, including in CSP-restricted environments. */
-	decodeInterpreted(structName: string, payload: Uint8Array, offset = 0): StructPayload | string {
-		const byteLength = this.getByteLength(structName);
-		if (typeof byteLength === 'string') return byteLength;
-		this.validatePayload(payload, offset, byteLength);
-		return this.decodeInterpretedAt(structName, payload, new ByteOffset(offset));
 	}
 
 	private validatePayload(payload: Uint8Array, offset: number, byteLength: number): void {
 		if (!Number.isSafeInteger(offset) || offset < 0 || offset + byteLength > payload.byteLength) {
 			throw new RangeError('Struct payload is truncated or its byte offset is invalid');
 		}
-	}
-
-	private decodeInterpretedAt(structName: string, payload: Uint8Array, offset: ByteOffset): StructPayload | string {
-		if (!this.definitions.has(structName)) {
-			return structName;
-		}
-
-		const specification = this.getDefinition(structName);
-		const result: StructPayload = {};
-
-		const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
-		const bitFields = new BitFieldTracker();
-
-		for (const member of specification) {
-			// Define this field before assignment so the inherited setter is never invoked.
-			if (member.name === '__proto__') {
-				Object.defineProperty(result, member.name, {
-					value: undefined,
-					enumerable: true,
-					writable: true,
-					configurable: true,
-				});
-			}
-			const memberByteLength = this.calculateByteLength(member);
-			const bitField = typeof memberByteLength === 'number' ? bitFields.next(member, memberByteLength) : undefined;
-			if (bitField) {
-				offset.advance(bitField.bytesToAdvance);
-				result[member.name] = decodeBitField(view, offset.get(), member, bitField);
-				continue;
-			}
-
-			offset.advance(bitFields.flush());
-
-			switch (member.value) {
-				case KnownStructTypeName.Boolean:
-					if (member.arraySize !== undefined) {
-						const array: boolean[] = [];
-						for (let i = 0; i < member.arraySize; i++) {
-							array.push(Boolean(view.getUint8(offset.get())));
-							offset.advance8();
-						}
-						result[member.name] = array;
-					} else {
-						result[member.name] = Boolean(view.getUint8(offset.get()));
-						offset.advance8();
-					}
-					break;
-				case KnownStructTypeName.Int8:
-					if (member.arraySize !== undefined) {
-						const array: number[] = [];
-						for (let i = 0; i < member.arraySize; i++) {
-							array.push(view.getInt8(offset.get()));
-							offset.advance8();
-						}
-						result[member.name] = array;
-					} else {
-						result[member.name] = view.getInt8(offset.get());
-						offset.advance8();
-					}
-					break;
-				case KnownStructTypeName.Int16:
-					if (member.arraySize !== undefined) {
-						const array: number[] = [];
-						for (let i = 0; i < member.arraySize; i++) {
-							array.push(view.getInt16(offset.get(), true));
-							offset.advance16();
-						}
-						result[member.name] = array;
-					} else {
-						result[member.name] = view.getInt16(offset.get(), true);
-						offset.advance16();
-					}
-					break;
-				case KnownStructTypeName.Int32:
-					if (member.arraySize !== undefined) {
-						const array: number[] = [];
-						for (let i = 0; i < member.arraySize; i++) {
-							array.push(view.getInt32(offset.get(), true));
-							offset.advance32();
-						}
-						result[member.name] = array;
-					} else {
-						result[member.name] = view.getInt32(offset.get(), true);
-						offset.advance32();
-					}
-					break;
-				case KnownStructTypeName.Int64:
-					if (member.arraySize !== undefined) {
-						const array: bigint[] = [];
-						for (let i = 0; i < member.arraySize; i++) {
-							array.push(view.getBigInt64(offset.get(), true));
-							offset.advance64();
-						}
-						result[member.name] = array;
-					} else {
-						result[member.name] = view.getBigInt64(offset.get(), true);
-						offset.advance64();
-					}
-					break;
-				case KnownStructTypeName.Uint8:
-					if (member.arraySize !== undefined) {
-						const array: number[] = [];
-						for (let i = 0; i < member.arraySize; i++) {
-							array.push(view.getUint8(offset.get()));
-							offset.advance8();
-						}
-						result[member.name] = array;
-					} else {
-						result[member.name] = view.getUint8(offset.get());
-						offset.advance8();
-					}
-					break;
-				case KnownStructTypeName.Uint16:
-					if (member.arraySize !== undefined) {
-						const array: number[] = [];
-						for (let i = 0; i < member.arraySize; i++) {
-							array.push(view.getUint16(offset.get(), true));
-							offset.advance16();
-						}
-						result[member.name] = array;
-					} else {
-						result[member.name] = view.getUint16(offset.get(), true);
-						offset.advance16();
-					}
-					break;
-				case KnownStructTypeName.Uint32:
-					if (member.arraySize !== undefined) {
-						const array: number[] = [];
-						for (let i = 0; i < member.arraySize; i++) {
-							array.push(view.getUint32(offset.get(), true));
-							offset.advance32();
-						}
-						result[member.name] = array;
-					} else {
-						result[member.name] = view.getUint32(offset.get(), true);
-						offset.advance32();
-					}
-					break;
-				case KnownStructTypeName.Uint64:
-					if (member.arraySize !== undefined) {
-						const array: bigint[] = [];
-						for (let i = 0; i < member.arraySize; i++) {
-							array.push(view.getBigUint64(offset.get(), true));
-							offset.advance64();
-						}
-						result[member.name] = array;
-					} else {
-						result[member.name] = view.getBigUint64(offset.get(), true);
-						offset.advance64();
-					}
-					break;
-				case KnownStructTypeName.Float32:
-				case KnownStructTypeName.Float:
-					if (member.arraySize !== undefined) {
-						const array: number[] = [];
-						for (let i = 0; i < member.arraySize; i++) {
-							array.push(view.getFloat32(offset.get(), true));
-							offset.advance32();
-						}
-						result[member.name] = array;
-					} else {
-						result[member.name] = view.getFloat32(offset.get(), true);
-						offset.advance32();
-					}
-					break;
-				case KnownStructTypeName.Float64:
-				case KnownStructTypeName.Double:
-					if (member.arraySize !== undefined) {
-						const array: number[] = [];
-						for (let i = 0; i < member.arraySize; i++) {
-							array.push(view.getFloat64(offset.get(), true));
-							offset.advance64();
-						}
-						result[member.name] = array;
-					} else {
-						result[member.name] = view.getFloat64(offset.get(), true);
-						offset.advance64();
-					}
-					break;
-				case KnownStructTypeName.Character:
-					if (member.arraySize !== undefined) {
-						result[member.name] = StructRegistry.TEXT_DECODER.decode(
-							payload.subarray(offset.get(), offset.advance(member.arraySize).get()),
-						);
-					} else {
-						result[member.name] = StructRegistry.TEXT_DECODER.decode(
-							payload.subarray(offset.get(), offset.advance8().get()),
-						);
-					}
-					break;
-				default: {
-					if (member.arraySize !== undefined) {
-						const array: StructPayload[] = [];
-						for (let i = 0; i < member.arraySize; i++) {
-							const decoded = this.decodeInterpretedAt(member.value, payload, offset);
-							if (typeof decoded === 'string') {
-								return decoded;
-							}
-							array.push(decoded);
-						}
-						result[member.name] = array;
-					} else {
-						const decoded = this.decodeInterpretedAt(member.value, payload, offset);
-						if (typeof decoded === 'string') {
-							return decoded;
-						}
-						result[member.name] = decoded;
-					}
-				}
-			}
-		}
-		offset.advance(bitFields.flush());
-
-		return result;
 	}
 
 	/** Transitive dependencies, including the requested schema and primitive types. */

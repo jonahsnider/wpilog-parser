@@ -44,7 +44,7 @@ describe('standalone registry', () => {
 	});
 });
 
-for (const codeGeneration of [true, false, 'function', 'closures'] as const) {
+for (const codeGeneration of [true, false] as const) {
 	describe(`decoding (codeGeneration: ${JSON.stringify(codeGeneration)})`, () => {
 		test('preserves bigint fidelity, single-element arrays, UTF-8 and NUL bytes', () => {
 			const registry = new StructRegistry({ codeGeneration });
@@ -66,7 +66,6 @@ for (const codeGeneration of [true, false, 'function', 'closures'] as const) {
 			const registry = new StructRegistry({ codeGeneration });
 			registry.register('Text', 'char value[4]');
 			expect(() => registry.decode('Text', new Uint8Array(3))).toThrowError(RangeError);
-			expect(() => registry.decodeInterpreted('Text', new Uint8Array(3))).toThrowError(RangeError);
 			expect(() => registry.decodeArray('Text', new Uint8Array(5))).toThrowError(RangeError);
 			expect(registry.decodeArray('Text', new Uint8Array())).toEqual([]);
 			for (const offset of [-1, 0.5, NaN, Infinity, 2]) {
@@ -77,19 +76,17 @@ for (const codeGeneration of [true, false, 'function', 'closures'] as const) {
 	});
 }
 
-describe('explicit interpreter and closures policies', { concurrent: false }, () => {
+describe('explicit closure compilation', { concurrent: false }, () => {
 	afterEach(() => vi.restoreAllMocks());
 
-	test('never probes or invokes the Function constructor for false or closures', () => {
+	test('never probes or invokes the Function constructor when codeGeneration is false', () => {
 		const constructor = vi.spyOn(globalThis, 'Function').mockImplementation(function () {
 			throw new Error('Code generation must not be attempted');
 		});
-		for (const codeGeneration of [false, 'closures'] as const) {
-			const registry = new StructRegistry({ codeGeneration });
-			registry.register('Value', 'uint8 value');
-			expect(registry.decode('Value', new Uint8Array([42]))).toEqual({ value: 42 });
-			expect(registry.decodeArray('Value', new Uint8Array([1, 2]))).toEqual([{ value: 1 }, { value: 2 }]);
-		}
+		const registry = new StructRegistry({ codeGeneration: false });
+		registry.register('Value', 'uint8 value');
+		expect(registry.decode('Value', new Uint8Array([42]))).toEqual({ value: 42 });
+		expect(registry.decodeArray('Value', new Uint8Array([1, 2]))).toEqual([{ value: 1 }, { value: 2 }]);
 		expect(constructor).not.toHaveBeenCalled();
 	});
 });

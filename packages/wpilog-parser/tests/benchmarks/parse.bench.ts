@@ -2,8 +2,8 @@ import { afterEach, test, describe, vi } from 'vite-plus/test';
 import { catalogEntries, decodeRecords, parseDataLog, readRecords } from '../../src/index.ts';
 import { FIXTURES } from './shared.ts';
 
-// Select the production CSP interpreter outside timed parsing, including warmup.
-const INTERPRETED_STRUCTS = {
+// Select the production CSP closure decoder outside timed parsing, including warmup.
+const CLOSURE_STRUCTS = {
 	beforeAll() {
 		vi.spyOn(globalThis, 'Function').mockImplementation(function () {
 			throw new EvalError('Code generation disallowed by CSP');
@@ -33,10 +33,7 @@ for (const fixture of FIXTURES) {
 					// discard
 				}
 			};
-			await bench.compare(
-				bench('decodeRecords', decode),
-				bench('interpreted decodeRecords', INTERPRETED_STRUCTS, decode),
-			);
+			await bench.compare(bench('decodeRecords', decode), bench('closure decodeRecords', CLOSURE_STRUCTS, decode));
 		});
 
 		test('parseDataLog', async ({ bench }) => {
@@ -45,7 +42,7 @@ for (const fixture of FIXTURES) {
 					// discard
 				}
 			};
-			await bench.compare(bench('parseDataLog', parse), bench('interpreted parseDataLog', INTERPRETED_STRUCTS, parse));
+			await bench.compare(bench('parseDataLog', parse), bench('closure parseDataLog', CLOSURE_STRUCTS, parse));
 		});
 
 		test('catalogEntries', async ({ bench }) => {

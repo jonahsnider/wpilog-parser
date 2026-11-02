@@ -9,17 +9,14 @@ for (const fixture of STRUCT_FIXTURES) {
 	describe(fixture.name, { concurrent: false }, () => {
 		const { registry, payloads } = createStructFixture(fixture);
 		const decode = (bytes: Uint8Array) => registry.decode(fixture.name, bytes) as StructPayload;
-		const closuresRegistry = new StructRegistry({ codeGeneration: 'closures' });
+		const closuresRegistry = new StructRegistry({ codeGeneration: false });
 		for (const [name, schema] of Object.entries(fixture.schemas)) closuresRegistry.register(name, schema);
 		const closures = (bytes: Uint8Array) => closuresRegistry.decode(fixture.name, bytes) as StructPayload;
-		const interpreted = (bytes: Uint8Array) => registry.decodeInterpreted(fixture.name, bytes) as StructPayload;
 		// Warm decoders outside timed steady-state decoding.
 		decode(payloads[0]!);
 		closures(payloads[0]!);
-		interpreted(payloads[0]!);
 		for (const bytes of payloads) {
-			expect(decode(bytes)).toStrictEqual(interpreted(bytes));
-			expect(closures(bytes)).toStrictEqual(interpreted(bytes));
+			expect(closures(bytes)).toStrictEqual(decode(bytes));
 		}
 
 		test('decode 32 struct payloads (schemas already registered)', async ({ bench }) => {
@@ -28,7 +25,6 @@ for (const fixture of STRUCT_FIXTURES) {
 			await bench.compare(
 				bench('compiled function', () => (decoded = payloads.map(decode))),
 				bench('compiled closures', () => (decoded = payloads.map(closures))),
-				bench('interpreted object', () => (decoded = payloads.map(interpreted))),
 			);
 			expect(decoded).toHaveLength(payloads.length);
 		});
@@ -49,15 +45,14 @@ for (const fixture of STRUCT_FIXTURES) {
 
 		test('register schemas and decode first payload (process caches warm)', async ({ bench }) => {
 			let decoded: unknown;
-			const firstDecode = (codeGeneration: boolean | 'closures') => {
+			const firstDecode = (codeGeneration: boolean) => {
 				const registry = new StructRegistry({ codeGeneration });
 				for (const [name, schema] of Object.entries(fixture.schemas)) registry.register(name, schema);
 				return registry.decode(fixture.name, payloads[0]!);
 			};
 			await bench.compare(
 				bench('registration + function compilation + first decode', () => (decoded = firstDecode(true))),
-				bench('registration + closure compilation + first decode', () => (decoded = firstDecode('closures'))),
-				bench('registration + interpreted first decode', () => (decoded = firstDecode(false))),
+				bench('registration + closure compilation + first decode', () => (decoded = firstDecode(false))),
 			);
 			expect(decoded).toStrictEqual(decode(payloads[0]!));
 		});
@@ -69,17 +64,13 @@ for (const fixture of STRUCT_FIXTURES) {
 				array.set(bytes, offset);
 				offset += bytes.byteLength;
 			}
-			const interpretedRegistry = new StructRegistry({ codeGeneration: false });
-			for (const [name, schema] of Object.entries(fixture.schemas)) interpretedRegistry.register(name, schema);
 			const expected = payloads.map(decode);
 			expect(registry.decodeArray(fixture.name, array)).toStrictEqual(expected);
 			expect(closuresRegistry.decodeArray(fixture.name, array)).toStrictEqual(expected);
-			expect(interpretedRegistry.decodeArray(fixture.name, array)).toStrictEqual(expected);
 			let decoded: unknown;
 			await bench.compare(
 				bench('compiled function array', () => (decoded = registry.decodeArray(fixture.name, array))),
 				bench('compiled closures array', () => (decoded = closuresRegistry.decodeArray(fixture.name, array))),
-				bench('interpreted array', () => (decoded = interpretedRegistry.decodeArray(fixture.name, array))),
 			);
 			expect(decoded).toStrictEqual(expected);
 		});

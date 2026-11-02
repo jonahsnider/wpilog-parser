@@ -23,7 +23,7 @@ const READERS: Record<string, Reader> = {
 
 export type CompiledStructDecoder = (view: DataView, bytes: Uint8Array, base: number) => StructPayload;
 
-/** Probe lazily, once per registry, so CSP restrictions leave the interpreter available. */
+/** Probe lazily, once per registry, so CSP restrictions select closure compilation. */
 export function allowsCodeGeneration(): boolean {
 	try {
 		// oxlint-disable-next-line typescript/no-implied-eval

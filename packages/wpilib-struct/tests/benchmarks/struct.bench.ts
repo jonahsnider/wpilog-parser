@@ -9,7 +9,7 @@ const fixture = STRUCT_FIXTURES.find((fixture) => fixture.name === 'Pose2d')!;
 describe(fixture.name, { concurrent: false }, () => {
 	const { registry, payloads } = createStructFixture(fixture);
 	const decode = (bytes: Uint8Array) => registry.decode(fixture.name, bytes) as StructPayload;
-	const closuresRegistry = new StructRegistry({ codeGeneration: 'closures' });
+	const closuresRegistry = new StructRegistry({ codeGeneration: false });
 	for (const [name, schema] of Object.entries(fixture.schemas)) closuresRegistry.register(name, schema);
 	const closures = (bytes: Uint8Array) => closuresRegistry.decode(fixture.name, bytes) as StructPayload;
 	// Warm decoders outside timed steady-state decoding.
@@ -31,14 +31,14 @@ describe(fixture.name, { concurrent: false }, () => {
 
 	test('register schemas and decode first payload (process caches warm)', async ({ bench }) => {
 		let decoded: unknown;
-		const firstDecode = (codeGeneration: boolean | 'closures') => {
+		const firstDecode = (codeGeneration: boolean) => {
 			const registry = new StructRegistry({ codeGeneration });
 			for (const [name, schema] of Object.entries(fixture.schemas)) registry.register(name, schema);
 			return registry.decode(fixture.name, payloads[0]!);
 		};
 		await bench.compare(
 			bench('registration + compilation + first decode', () => (decoded = firstDecode(true))),
-			bench('registration + closure compilation + first decode', () => (decoded = firstDecode('closures'))),
+			bench('registration + closure compilation + first decode', () => (decoded = firstDecode(false))),
 		);
 		expect(decoded).toStrictEqual(decode(payloads[0]!));
 	});

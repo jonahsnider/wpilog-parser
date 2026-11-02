@@ -26,7 +26,7 @@ for (const record of parseDataLog(bytes)) {
 Use `readRecords()` and `decodeRecords()` separately when you need access to raw records or want to transform the record stream before decoding it. Both approaches produce the same decoded records.
 
 Struct schemas are compiled lazily into reusable decoders, and struct payloads are returned as plain objects, including nested structs and arrays of structs.
-In environments where Content Security Policy blocks runtime code generation, structs are decoded by the interpreter automatically.
+In environments where Content Security Policy blocks runtime code generation, structs are decoded using CSP-safe closures automatically.
 
 A summary of the full API is available in [wpilog-parser.api.md](https://github.com/jonahsnider/wpilog-parser/blob/main/packages/wpilog-parser/etc/wpilog-parser.api.md).
 

@@ -18,7 +18,7 @@ minimumReleaseAgeExclude:
   - osc-status@1.0.0
 catalog:
   vite: npm:@voidzero-dev/vite-plus-core@1.4.0
-  vitest: 5.0.5
+  vitest: 5.1.0
   vite-plus: 1.4.0
 overrides:
   vite@*: 'catalog:'

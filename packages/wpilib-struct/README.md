@@ -26,11 +26,13 @@ console.log(registry.decode('Translation2d', bytes));
 ```
 
 `decode()` returns a plain object, including nested structs and arrays. 64-bit integers are returned as `bigint` values.
-Use `decodeArray()` to decode an array of structs, passing the base schema name without a `[]` suffix.
+Use `decodeArray()` / `encodeArray()` for contiguous arrays of structs, passing the base schema name without a `[]` suffix.
+`encode()` / `encodeInto()` pack the same layouts that decode reads; `char` fields are strings (UTF-8, truncated/padded to width).
 
-Schemas can be registered in any order. If a schema is missing, decoding returns its name instead of a decoded value.
+Schemas can be registered in any order. If a schema is missing, encode and decode return its name instead of a value.
 
 Reuse a registry for repeated decoding. Schemas are compiled lazily into reusable decoders.
 In environments where Content Security Policy blocks runtime code generation, decoding falls back to a CSP-safe implementation.
+Encoding currently uses the interpreter only.
 
 A summary of the full API is available in [wpilib-struct.api.md](https://github.com/jonahsnider/wpilog-parser/blob/main/packages/wpilib-struct/etc/wpilib-struct.api.md).

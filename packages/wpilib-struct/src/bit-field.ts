@@ -96,3 +96,38 @@ function isSignedInteger(type: string): boolean {
 			return false;
 	}
 }
+
+export function encodeBitField(
+	view: DataView,
+	offset: number,
+	member: StructDeclaration,
+	layout: BitFieldLayout,
+	value: number | bigint | boolean,
+): void {
+	const mask = (1n << BigInt(layout.bitWidth)) - 1n;
+	const bits =
+		member.value === KnownStructTypeName.Boolean ? (value ? 1n : 0n) : BigInt(value as number | bigint) & mask;
+
+	let storage = readUnsignedInteger(view, offset, layout.storageByteLength);
+	storage = (storage & ~(mask << BigInt(layout.bitShift))) | (bits << BigInt(layout.bitShift));
+	writeUnsignedInteger(view, offset, layout.storageByteLength, storage);
+}
+
+function writeUnsignedInteger(view: DataView, offset: number, byteLength: number, value: bigint): void {
+	switch (byteLength) {
+		case 1:
+			view.setUint8(offset, Number(value));
+			break;
+		case 2:
+			view.setUint16(offset, Number(value), true);
+			break;
+		case 4:
+			view.setUint32(offset, Number(value), true);
+			break;
+		case 8:
+			view.setBigUint64(offset, value, true);
+			break;
+		default:
+			throw new TypeError(`Invalid bit-field storage size: ${byteLength}`);
+	}
+}

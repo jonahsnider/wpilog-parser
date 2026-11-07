@@ -15,7 +15,7 @@
 		"test": "vp run build && vp test run"
 	},
 	"devDependencies": {
-		"@codspeed/vitest-plugin": "6.1.0",
+		"@codspeed/vitest-plugin": "6.1.1",
 		"@types/node": "26.6.6",
 		"@typescript/native-preview": "7.0.0-dev.20260707.2",
 		"typescript": "7.0.2",

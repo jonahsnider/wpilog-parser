@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/jonahsnider/wpilog-parser/compare/wpilib-struct-v1.0.1...wpilib-struct-v1.0.2) (2026-11-12)
+
+
+### Performance Improvements
+
+* **wpilib-struct:** use closures instead of plain interpreted decoding ([#83](https://github.com/jonahsnider/wpilog-parser/issues/83)) ([e24f2a0](https://github.com/jonahsnider/wpilog-parser/commit/e24f2a0b95b7da9248476f1ebc17330ab696c852))
+
 ## [1.0.1](https://github.com/jonahsnider/wpilog-parser/compare/wpilib-struct-v1.0.0...wpilib-struct-v1.0.1) (2026-10-31)
 
 

@@ -344,7 +344,8 @@ function decodeNonScalarPayload(
 			}
 
 			// Unknown type — return raw
-			return { ...base, type: RecordType.Raw, payload: raw.payload };
+			// Create a copy of the bytes instead of a view over the original log buffer
+			return { ...base, type: RecordType.Raw, payload: new Uint8Array(raw.payload) };
 		}
 	}
 }

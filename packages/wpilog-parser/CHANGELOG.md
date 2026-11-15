@@ -1,5 +1,21 @@
 # Changelog
 
+## [3.2.2](https://github.com/jonahsnider/wpilog-parser/compare/v3.2.1...v3.2.2) (2026-11-15)
+
+
+### Performance Improvements
+
+* make record creation faster during decode ([#94](https://github.com/jonahsnider/wpilog-parser/issues/94)) ([6a09f53](https://github.com/jonahsnider/wpilog-parser/commit/6a09f53c1434f7dfa2f8e7a1de2df7b6099c9a68))
+* reduce heap memory usage from raw log entries ([#93](https://github.com/jonahsnider/wpilog-parser/issues/93)) ([07c2b33](https://github.com/jonahsnider/wpilog-parser/commit/07c2b33a70c5a3f5ab86076482fc010f07d4e743))
+* **wpilib-struct:** use closures instead of plain interpreted decoding ([#83](https://github.com/jonahsnider/wpilog-parser/issues/83)) ([e24f2a0](https://github.com/jonahsnider/wpilog-parser/commit/e24f2a0b95b7da9248476f1ebc17330ab696c852))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * wpilib-struct bumped to 1.0.2
+
 ## [3.2.1](https://github.com/jonahsnider/wpilog-parser/compare/v3.2.0...v3.2.1) (2026-10-31)
 
 

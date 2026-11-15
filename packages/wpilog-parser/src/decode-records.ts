@@ -7,6 +7,7 @@ import {
 	type ControlRecordPayload,
 	ControlRecordType,
 	type DecodedRecord,
+	type DataRecord,
 	type RawRecord,
 	RecordType,
 	type StartControlRecord,
@@ -22,6 +23,23 @@ type EntryContext = {
 	entryType: StartControlRecord['entryType'];
 	metadata: string;
 };
+
+type PlainDataRecord = Exclude<DataRecord, { structName: string }>;
+
+/**
+ * Build a non-struct data record as one flat object literal.
+ * Struct records are built inline with the same field order plus `structName`.
+ */
+function dataRecord<T extends PlainDataRecord['type']>(
+	entryId: number,
+	timestamp: bigint,
+	name: string,
+	metadata: string,
+	type: T,
+	payload: Extract<PlainDataRecord, { type: T }>['payload'],
+): DataRecord {
+	return { entryId, timestamp, name, metadata, type, payload } as DataRecord;
+}
 
 function byteToBoolean(byte: number): boolean {
 	switch (byte) {
@@ -68,13 +86,16 @@ class RecordDecoder {
 
 				const { entryType, name, metadata } = context;
 				const structName = entryType.slice(STRUCT_PREFIX.length);
-				const base = { entryId: raw.entryId, timestamp: raw.timestamp, name, metadata, structName };
 				if (entryType.endsWith(STRUCT_ARRAY_SUFFIX)) {
 					const payload = this.structRegistry.decodeArray(structName, raw.payload);
 					if (typeof payload !== 'string') {
 						this.delayedRecords.push({
-							...base,
+							entryId: raw.entryId,
+							timestamp: raw.timestamp,
+							name,
+							metadata,
 							type: RecordType.StructArray,
+							structName,
 							payload,
 						});
 					}
@@ -82,8 +103,12 @@ class RecordDecoder {
 					const payload = this.structRegistry.decode(structName, raw.payload);
 					if (typeof payload !== 'string') {
 						this.delayedRecords.push({
-							...base,
+							entryId: raw.entryId,
+							timestamp: raw.timestamp,
+							name,
+							metadata,
 							type: RecordType.Struct,
+							structName,
 							payload,
 						});
 					}
@@ -132,16 +157,23 @@ class RecordDecoder {
 			}
 			return undefined;
 		}
-		const base = { entryId, timestamp, name: context.name, metadata: context.metadata };
+		const { name, metadata } = context;
 		switch (context.entryType) {
 			case 'boolean':
-				return { ...base, type: RecordType.Boolean, payload: byteToBoolean(view.getUint8(payloadOffset)) };
+				return dataRecord(
+					entryId,
+					timestamp,
+					name,
+					metadata,
+					RecordType.Boolean,
+					byteToBoolean(view.getUint8(payloadOffset)),
+				);
 			case 'int64':
-				return { ...base, type: RecordType.Int64, payload: view.getBigInt64(payloadOffset, true) };
+				return dataRecord(entryId, timestamp, name, metadata, RecordType.Int64, view.getBigInt64(payloadOffset, true));
 			case 'float':
-				return { ...base, type: RecordType.Float, payload: view.getFloat32(payloadOffset, true) };
+				return dataRecord(entryId, timestamp, name, metadata, RecordType.Float, view.getFloat32(payloadOffset, true));
 			case 'double':
-				return { ...base, type: RecordType.Double, payload: view.getFloat64(payloadOffset, true) };
+				return dataRecord(entryId, timestamp, name, metadata, RecordType.Double, view.getFloat64(payloadOffset, true));
 		}
 
 		const payload =
@@ -254,38 +286,37 @@ function decodeNonScalarPayload(
 	structRegistry: StructRegistry,
 	structDecodeQueue: StructDecodeQueue,
 ): DecodedRecord | undefined {
-	const base = { entryId: raw.entryId, timestamp: raw.timestamp, name, metadata };
-
+	const { entryId, timestamp } = raw;
 	switch (entryType) {
 		case 'string':
-			return { ...base, type: RecordType.String, payload: TEXT_DECODER.decode(raw.payload) };
+			return dataRecord(entryId, timestamp, name, metadata, RecordType.String, TEXT_DECODER.decode(raw.payload));
 		case 'boolean[]': {
 			const payload: boolean[] = [];
 			for (let i = 0; i < raw.payload.byteLength; i++) {
 				payload.push(byteToBoolean(view.getUint8(i)));
 			}
-			return { ...base, type: RecordType.BooleanArray, payload };
+			return dataRecord(entryId, timestamp, name, metadata, RecordType.BooleanArray, payload);
 		}
 		case 'int64[]': {
 			const payload: bigint[] = [];
 			for (let i = 0; i < raw.payload.byteLength; i += 8) {
 				payload.push(view.getBigUint64(i, true));
 			}
-			return { ...base, type: RecordType.Int64Array, payload };
+			return dataRecord(entryId, timestamp, name, metadata, RecordType.Int64Array, payload);
 		}
 		case 'float[]': {
 			const payload: number[] = [];
 			for (let i = 0; i < raw.payload.byteLength; i += 4) {
 				payload.push(view.getFloat32(i, true));
 			}
-			return { ...base, type: RecordType.FloatArray, payload };
+			return dataRecord(entryId, timestamp, name, metadata, RecordType.FloatArray, payload);
 		}
 		case 'double[]': {
 			const payload: number[] = [];
 			for (let i = 0; i < raw.payload.byteLength; i += 8) {
 				payload.push(view.getFloat64(i, true));
 			}
-			return { ...base, type: RecordType.DoubleArray, payload };
+			return dataRecord(entryId, timestamp, name, metadata, RecordType.DoubleArray, payload);
 		}
 		case 'string[]': {
 			const payload: string[] = [];
@@ -299,14 +330,14 @@ function decodeNonScalarPayload(
 				offset.advance(stringLength);
 				payload.push(string);
 			}
-			return { ...base, type: RecordType.StringArray, payload };
+			return dataRecord(entryId, timestamp, name, metadata, RecordType.StringArray, payload);
 		}
 		case 'structschema': {
 			// Schema records: register the struct, but emit as a string record
 			const structName = name.slice(name.indexOf(STRUCT_SCHEMA_NAME_PREFIX) + STRUCT_SCHEMA_NAME_PREFIX.length);
 			const payload = TEXT_DECODER.decode(raw.payload);
 			structRegistry.register(structName, payload);
-			return { ...base, type: RecordType.String, payload };
+			return dataRecord(entryId, timestamp, name, metadata, RecordType.String, payload);
 		}
 		default: {
 			// Try to decode as struct
@@ -321,7 +352,10 @@ function decodeNonScalarPayload(
 					}
 
 					return {
-						...base,
+						entryId,
+						timestamp,
+						name,
+						metadata,
 						type: RecordType.StructArray,
 						structName,
 						payload: decoded,
@@ -336,7 +370,10 @@ function decodeNonScalarPayload(
 				}
 
 				return {
-					...base,
+					entryId,
+					timestamp,
+					name,
+					metadata,
 					type: RecordType.Struct,
 					structName,
 					payload: decoded,
@@ -345,7 +382,7 @@ function decodeNonScalarPayload(
 
 			// Unknown type — return raw
 			// Create a copy of the bytes instead of a view over the original log buffer
-			return { ...base, type: RecordType.Raw, payload: new Uint8Array(raw.payload) };
+			return dataRecord(entryId, timestamp, name, metadata, RecordType.Raw, new Uint8Array(raw.payload));
 		}
 	}
 }

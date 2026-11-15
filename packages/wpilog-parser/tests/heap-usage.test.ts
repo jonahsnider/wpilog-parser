@@ -7,7 +7,7 @@ import { LOG_FIXTURES } from './helpers/log-fixtures.ts';
 
 // Heap cost of keeping every decoded record alive, measured after GC.
 // CodSpeed's memory instrument only tracks malloc, so it can't see records on the V8 heap.
-const MAX_HEAP_BYTES_PER_RECORD = 190;
+const MAX_HEAP_BYTES_PER_RECORD = 170;
 
 v8.setFlagsFromString('--expose-gc');
 const gc: () => void = vm.runInNewContext('gc');

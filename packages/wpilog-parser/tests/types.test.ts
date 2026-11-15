@@ -4,11 +4,9 @@ import { type DecodedRecord, RecordType, isDataRecord } from '../src/types.ts';
 describe('isDataRecord', () => {
 	test('returns true for data records', ({ expect }) => {
 		const record: DecodedRecord = {
-			entryId: 1,
+			entry: { entryId: 1, name: '/test', type: 'double', metadata: '' },
 			timestamp: 0,
 			type: RecordType.Double,
-			name: '/test',
-			metadata: '',
 			payload: 1.5,
 		};
 		expect(isDataRecord(record)).toBe(true);
@@ -26,17 +24,15 @@ describe('isDataRecord', () => {
 
 	test('narrows type to access name field', ({ expect }) => {
 		const record: DecodedRecord = {
-			entryId: 1,
+			entry: { entryId: 1, name: '/test/entry', type: 'string', metadata: '' },
 			timestamp: 0,
 			type: RecordType.String,
-			name: '/test/entry',
-			metadata: '',
 			payload: 'hello',
 		};
 
 		if (isDataRecord(record)) {
-			// This should compile — name is accessible after narrowing
-			expect(record.name).toBe('/test/entry');
+			// This should compile — entry is accessible after narrowing
+			expect(record.entry.name).toBe('/test/entry');
 		}
 	});
 });

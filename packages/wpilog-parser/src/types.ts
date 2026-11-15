@@ -44,6 +44,14 @@ export type SetMetadataControlRecord = {
 /** A control record payload (start, finish, or set metadata). */
 export type ControlRecordPayload = StartControlRecord | FinishControlRecord | SetMetadataControlRecord;
 
+/** An entry definition, from its Start control record and any later SetMetadata control records. */
+export type CatalogEntry = {
+	entryId: number;
+	name: string;
+	type: string;
+	metadata: string;
+};
+
 /** A raw (undecoded) data log record from the binary format. */
 export type RawRecord = {
 	entryId: number;
@@ -73,7 +81,7 @@ export const RecordType = {
 export type RecordType = (typeof RecordType)[keyof typeof RecordType];
 
 /** A decoded data record (excludes control records). */
-export type DataRecord = Extract<DecodedRecord, { name: string }>;
+export type DataRecord = Extract<DecodedRecord, { entry: CatalogEntry }>;
 
 /** A decoded control record. */
 export type ControlRecord = Extract<DecodedRecord, { type: typeof RecordType.Control }>;
@@ -85,14 +93,16 @@ export function isDataRecord(record: DecodedRecord): record is DataRecord {
 
 /** A decoded data log record. */
 export type DecodedRecord = {
-	entryId: number;
 	/** Timestamp in microseconds. */
 	timestamp: number;
 } & (
-	| { type: typeof RecordType.Control; payload: ControlRecordPayload }
+	| { entryId: number; type: typeof RecordType.Control; payload: ControlRecordPayload }
 	| ({
-			name: string;
-			metadata: string;
+			/**
+			 * The entry this record belongs to.
+			 * Records from the same entry share one object until a SetMetadata control record replaces it.
+			 */
+			entry: CatalogEntry;
 	  } & (
 			| { type: typeof RecordType.Raw; payload: Uint8Array }
 			| { type: typeof RecordType.Boolean; payload: boolean }

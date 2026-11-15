@@ -1,14 +1,8 @@
 import { normalizeEntryName } from './decode-records.ts';
 import type { ReadRecord } from './read-records.ts';
-import { ControlRecordType } from './types.ts';
+import { type CatalogEntry, ControlRecordType } from './types.ts';
 
-/** An entry definition from the WPILOG catalog. */
-export type CatalogEntry = {
-	entryId: number;
-	name: string;
-	type: string;
-	metadata: string;
-};
+export type { CatalogEntry } from './types.ts';
 
 /**
  * Collect all entry definitions from a WPILOG record stream.

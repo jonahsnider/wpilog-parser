@@ -28,11 +28,11 @@ describe('parseDataLog', () => {
 		const controlWords = Array.from(parseDataLog(bytes)).flatMap((record) => {
 			if (
 				record.type !== RecordType.Struct ||
-				(record.name !== '/NT:/DriverStation/ControlWord' && record.name !== '/DS:controlWord')
+				(record.entry.name !== '/NT:/DriverStation/ControlWord' && record.entry.name !== '/DS:controlWord')
 			) {
 				return [];
 			}
-			return [{ name: record.name, payload: record.payload }];
+			return [{ name: record.entry.name, payload: record.payload }];
 		});
 
 		const expectedPayload = {

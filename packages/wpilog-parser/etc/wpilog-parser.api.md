@@ -47,19 +47,18 @@ export type DataLogInput = Uint8Array | ArrayBuffer;
 
 // @public
 export type DataRecord = Extract<DecodedRecord, {
-    name: string;
+    entry: CatalogEntry;
 }>;
 
 // @public
 export type DecodedRecord = {
-    entryId: number;
     timestamp: number;
 } & ({
+    entryId: number;
     type: typeof RecordType.Control;
     payload: ControlRecordPayload;
 } | ({
-    name: string;
-    metadata: string;
+    entry: CatalogEntry;
 } & ({
     type: typeof RecordType.Raw;
     payload: Uint8Array;

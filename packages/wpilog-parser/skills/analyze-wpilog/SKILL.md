@@ -22,7 +22,7 @@ WPILOG is the binary log format used by logging libraries in the FRC ecosystem. 
 
 ## Analyzing logs
 
-Use `parseDataLog` to parse DataLog bytes. Filter by `name` and narrow on `type`:
+Use `parseDataLog` to parse DataLog bytes. Filter by `entry.name` and narrow on `type`:
 
 ```ts
 import { readFile } from 'node:fs/promises';
@@ -33,7 +33,7 @@ const bytes = await readFile('./example.wpilog');
 for (const record of parseDataLog(bytes)) {
 	if (!isDataRecord(record)) continue;
 
-	if (record.name === '/Robot/Intake/Voltage' && record.type === RecordType.Double) {
+	if (record.entry.name === '/Robot/Intake/Voltage' && record.type === RecordType.Double) {
 		console.log(record.timestamp, record.payload);
 	}
 }
@@ -45,7 +45,7 @@ for (const record of parseDataLog(bytes)) {
 import { parseDataLog, RecordType } from 'wpilog-parser';
 
 for (const record of parseDataLog(bytes)) {
-	if (record.type === RecordType.Struct && record.name === '/Robot/Localization/EstimatedPose') {
+	if (record.type === RecordType.Struct && record.entry.name === '/Robot/Localization/EstimatedPose') {
 		console.log(record.timestamp, record.payload);
 		// 18688018 {
 		//   translation: { x: 10.289, y: 0.47 },
@@ -100,9 +100,9 @@ for (const r of parseDataLog(bytes)) {
 	const wasEnabled = enabled;
 	const prevMode = modeOf(auto, test);
 
-	if (r.name === '/DS:enabled') enabled = r.payload;
-	else if (r.name === '/DS:autonomous') auto = r.payload;
-	else if (r.name === '/DS:test') test = r.payload;
+	if (r.entry.name === '/DS:enabled') enabled = r.payload;
+	else if (r.entry.name === '/DS:autonomous') auto = r.payload;
+	else if (r.entry.name === '/DS:test') test = r.payload;
 	else continue;
 
 	if (wasEnabled && (!enabled || modeOf(auto, test) !== prevMode)) {

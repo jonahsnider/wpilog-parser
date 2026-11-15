@@ -4,6 +4,7 @@ import { StructRegistry } from './struct/struct-registry.ts';
 import { ByteOffset } from './byte-offset.ts';
 import { diagnostics } from './diagnostics.ts';
 import {
+	type CatalogEntry,
 	type ControlRecordPayload,
 	ControlRecordType,
 	type DecodedRecord,
@@ -18,12 +19,6 @@ const STRUCT_PREFIX = 'struct:';
 const STRUCT_ARRAY_SUFFIX = '[]';
 const STRUCT_SCHEMA_NAME_PREFIX = '/.schema/' + STRUCT_PREFIX;
 
-type EntryContext = {
-	name: string;
-	entryType: StartControlRecord['entryType'];
-	metadata: string;
-};
-
 type PlainDataRecord = Exclude<DataRecord, { structName: string }>;
 
 /**
@@ -31,14 +26,12 @@ type PlainDataRecord = Exclude<DataRecord, { structName: string }>;
  * Struct records are built inline with the same field order plus `structName`.
  */
 function dataRecord<T extends PlainDataRecord['type']>(
-	entryId: number,
+	entry: CatalogEntry,
 	timestamp: number,
-	name: string,
-	metadata: string,
 	type: T,
 	payload: Extract<PlainDataRecord, { type: T }>['payload'],
 ): DataRecord {
-	return { entryId, timestamp, name, metadata, type, payload } as DataRecord;
+	return { entry, timestamp, type, payload } as DataRecord;
 }
 
 function byteToBoolean(byte: number): boolean {
@@ -71,8 +64,8 @@ export type DecodeRecordsOptions = {
 
 class RecordDecoder {
 	readonly delayedRecords: DecodedRecord[] = [];
-	private readonly context = new Map<StartControlRecord['entryId'], EntryContext>();
-	private readonly recordContexts = new WeakMap<RawRecord, EntryContext>();
+	private readonly entries = new Map<StartControlRecord['entryId'], CatalogEntry>();
+	private readonly recordEntries = new WeakMap<RawRecord, CatalogEntry>();
 	private readonly structDecodeQueue: StructDecodeQueue;
 	private readonly structRegistry: StructRegistry;
 	private readonly options: DecodeRecordsOptions;
@@ -81,19 +74,16 @@ class RecordDecoder {
 		this.options = options;
 		this.structDecodeQueue = new StructDecodeQueue((_structName, queuedRecords) => {
 			for (const raw of queuedRecords) {
-				const context = this.recordContexts.get(raw);
-				if (!context) continue;
+				const entry = this.recordEntries.get(raw);
+				if (!entry) continue;
 
-				const { entryType, name, metadata } = context;
-				const structName = entryType.slice(STRUCT_PREFIX.length);
-				if (entryType.endsWith(STRUCT_ARRAY_SUFFIX)) {
+				const structName = entry.type.slice(STRUCT_PREFIX.length);
+				if (entry.type.endsWith(STRUCT_ARRAY_SUFFIX)) {
 					const payload = this.structRegistry.decodeArray(structName, raw.payload);
 					if (typeof payload !== 'string') {
 						this.delayedRecords.push({
-							entryId: raw.entryId,
+							entry,
 							timestamp: raw.timestamp,
-							name,
-							metadata,
 							type: RecordType.StructArray,
 							structName,
 							payload,
@@ -103,10 +93,8 @@ class RecordDecoder {
 					const payload = this.structRegistry.decode(structName, raw.payload);
 					if (typeof payload !== 'string') {
 						this.delayedRecords.push({
-							entryId: raw.entryId,
+							entry,
 							timestamp: raw.timestamp,
-							name,
-							metadata,
 							type: RecordType.Struct,
 							structName,
 							payload,
@@ -121,19 +109,21 @@ class RecordDecoder {
 	decodeControl(entryId: number, timestamp: number, payload: ControlRecordPayload): DecodedRecord {
 		switch (payload.controlRecordType) {
 			case ControlRecordType.Start:
-				this.context.set(payload.entryId, {
+				this.entries.set(payload.entryId, {
+					entryId: payload.entryId,
 					name: normalizeEntryName(payload.entryName),
-					entryType: payload.entryType,
+					type: payload.entryType,
 					metadata: payload.entryMetadata,
 				});
 				break;
 			case ControlRecordType.Finish:
-				this.context.delete(payload.entryId);
+				this.entries.delete(payload.entryId);
 				break;
 			case ControlRecordType.SetMetadata: {
-				const existing = this.context.get(payload.entryId);
+				const existing = this.entries.get(payload.entryId);
 				if (existing) {
-					this.context.set(payload.entryId, { ...existing, metadata: payload.entryMetadata });
+					// Replace instead of mutating so records decoded earlier keep their metadata
+					this.entries.set(payload.entryId, { ...existing, metadata: payload.entryMetadata });
 				}
 				break;
 			}
@@ -150,30 +140,22 @@ class RecordDecoder {
 		payloadOffset: number,
 		payloadSize: number,
 	): DecodedRecord | undefined {
-		const context = this.context.get(entryId);
-		if (!context) {
+		const entry = this.entries.get(entryId);
+		if (!entry) {
 			if (this.options.strict) {
 				throw diagnostics.WPILOG_R0006({ entryId });
 			}
 			return undefined;
 		}
-		const { name, metadata } = context;
-		switch (context.entryType) {
+		switch (entry.type) {
 			case 'boolean':
-				return dataRecord(
-					entryId,
-					timestamp,
-					name,
-					metadata,
-					RecordType.Boolean,
-					byteToBoolean(view.getUint8(payloadOffset)),
-				);
+				return dataRecord(entry, timestamp, RecordType.Boolean, byteToBoolean(view.getUint8(payloadOffset)));
 			case 'int64':
-				return dataRecord(entryId, timestamp, name, metadata, RecordType.Int64, view.getBigInt64(payloadOffset, true));
+				return dataRecord(entry, timestamp, RecordType.Int64, view.getBigInt64(payloadOffset, true));
 			case 'float':
-				return dataRecord(entryId, timestamp, name, metadata, RecordType.Float, view.getFloat32(payloadOffset, true));
+				return dataRecord(entry, timestamp, RecordType.Float, view.getFloat32(payloadOffset, true));
 			case 'double':
-				return dataRecord(entryId, timestamp, name, metadata, RecordType.Double, view.getFloat64(payloadOffset, true));
+				return dataRecord(entry, timestamp, RecordType.Double, view.getFloat64(payloadOffset, true));
 		}
 
 		const payload =
@@ -182,17 +164,9 @@ class RecordDecoder {
 				: bytes.subarray(payloadOffset, payloadOffset + payloadSize);
 		const raw = { entryId, timestamp, payload };
 		const payloadView = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
-		const decoded = decodeNonScalarPayload(
-			raw,
-			context.entryType,
-			context.name,
-			context.metadata,
-			payloadView,
-			this.structRegistry,
-			this.structDecodeQueue,
-		);
+		const decoded = decodeNonScalarPayload(raw, entry, payloadView, this.structRegistry, this.structDecodeQueue);
 		if (!decoded) {
-			this.recordContexts.set(raw, context);
+			this.recordEntries.set(raw, entry);
 		}
 		return decoded;
 	}
@@ -279,44 +253,43 @@ export function* parseDataLog(
  */
 function decodeNonScalarPayload(
 	raw: RawRecord,
-	entryType: string,
-	name: string,
-	metadata: string,
+	entry: CatalogEntry,
 	view: DataView,
 	structRegistry: StructRegistry,
 	structDecodeQueue: StructDecodeQueue,
 ): DecodedRecord | undefined {
-	const { entryId, timestamp } = raw;
+	const { timestamp } = raw;
+	const { type: entryType, name } = entry;
 	switch (entryType) {
 		case 'string':
-			return dataRecord(entryId, timestamp, name, metadata, RecordType.String, TEXT_DECODER.decode(raw.payload));
+			return dataRecord(entry, timestamp, RecordType.String, TEXT_DECODER.decode(raw.payload));
 		case 'boolean[]': {
 			const payload: boolean[] = [];
 			for (let i = 0; i < raw.payload.byteLength; i++) {
 				payload.push(byteToBoolean(view.getUint8(i)));
 			}
-			return dataRecord(entryId, timestamp, name, metadata, RecordType.BooleanArray, payload);
+			return dataRecord(entry, timestamp, RecordType.BooleanArray, payload);
 		}
 		case 'int64[]': {
 			const payload: bigint[] = [];
 			for (let i = 0; i < raw.payload.byteLength; i += 8) {
 				payload.push(view.getBigUint64(i, true));
 			}
-			return dataRecord(entryId, timestamp, name, metadata, RecordType.Int64Array, payload);
+			return dataRecord(entry, timestamp, RecordType.Int64Array, payload);
 		}
 		case 'float[]': {
 			const payload: number[] = [];
 			for (let i = 0; i < raw.payload.byteLength; i += 4) {
 				payload.push(view.getFloat32(i, true));
 			}
-			return dataRecord(entryId, timestamp, name, metadata, RecordType.FloatArray, payload);
+			return dataRecord(entry, timestamp, RecordType.FloatArray, payload);
 		}
 		case 'double[]': {
 			const payload: number[] = [];
 			for (let i = 0; i < raw.payload.byteLength; i += 8) {
 				payload.push(view.getFloat64(i, true));
 			}
-			return dataRecord(entryId, timestamp, name, metadata, RecordType.DoubleArray, payload);
+			return dataRecord(entry, timestamp, RecordType.DoubleArray, payload);
 		}
 		case 'string[]': {
 			const payload: string[] = [];
@@ -330,14 +303,14 @@ function decodeNonScalarPayload(
 				offset.advance(stringLength);
 				payload.push(string);
 			}
-			return dataRecord(entryId, timestamp, name, metadata, RecordType.StringArray, payload);
+			return dataRecord(entry, timestamp, RecordType.StringArray, payload);
 		}
 		case 'structschema': {
 			// Schema records: register the struct, but emit as a string record
 			const structName = name.slice(name.indexOf(STRUCT_SCHEMA_NAME_PREFIX) + STRUCT_SCHEMA_NAME_PREFIX.length);
 			const payload = TEXT_DECODER.decode(raw.payload);
 			structRegistry.register(structName, payload);
-			return dataRecord(entryId, timestamp, name, metadata, RecordType.String, payload);
+			return dataRecord(entry, timestamp, RecordType.String, payload);
 		}
 		default: {
 			// Try to decode as struct
@@ -352,10 +325,8 @@ function decodeNonScalarPayload(
 					}
 
 					return {
-						entryId,
+						entry,
 						timestamp,
-						name,
-						metadata,
 						type: RecordType.StructArray,
 						structName,
 						payload: decoded,
@@ -370,10 +341,8 @@ function decodeNonScalarPayload(
 				}
 
 				return {
-					entryId,
+					entry,
 					timestamp,
-					name,
-					metadata,
 					type: RecordType.Struct,
 					structName,
 					payload: decoded,
@@ -382,7 +351,7 @@ function decodeNonScalarPayload(
 
 			// Unknown type — return raw
 			// Create a copy of the bytes instead of a view over the original log buffer
-			return dataRecord(entryId, timestamp, name, metadata, RecordType.Raw, new Uint8Array(raw.payload));
+			return dataRecord(entry, timestamp, RecordType.Raw, new Uint8Array(raw.payload));
 		}
 	}
 }

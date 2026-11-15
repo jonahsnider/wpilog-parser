@@ -1,5 +1,18 @@
 # Changelog
 
+## [4.0.0](https://github.com/jonahsnider/wpilog-parser/compare/v3.2.2...v4.0.0) (2026-11-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* data records now have an `entry` field (`{ entryId, name, type, metadata }`) instead of `entryId`, `name`, and `metadata` fields. Use `record.entry.name` instead of `record.name`.
+* `timestamp` on decoded records, `RawRecord`, and `ReadRecord` is now a `number` instead of a `bigint`.
+
+### Features
+
+* share one entry object across decoded data records ([a6b0791](https://github.com/jonahsnider/wpilog-parser/commit/a6b0791a79bee451ee5c7e27b80a164c82726abc))
+* use number instead of bigint for timestamps ([1de65de](https://github.com/jonahsnider/wpilog-parser/commit/1de65deeaea9fc9a349c15d8bdeb674948d4caab))
+
 ## [3.2.2](https://github.com/jonahsnider/wpilog-parser/compare/v3.2.1...v3.2.2) (2026-11-15)
 
 

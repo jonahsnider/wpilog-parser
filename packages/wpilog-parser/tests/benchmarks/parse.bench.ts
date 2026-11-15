@@ -44,6 +44,11 @@ for (const fixture of FIXTURES) {
 			await bench.compare(bench('parseDataLog', parse), bench('closure parseDataLog', CLOSURE_STRUCTS, parse));
 		});
 
+		// Keep every decoded record alive, to measure the memory cost of holding a fully parsed log
+		test('parseDataLog (collect)', async ({ bench }) => {
+			await bench('parseDataLog (collect)', () => Array.from(parseDataLog(fixture.bytes))).run();
+		});
+
 		test('catalogEntries', async ({ bench }) => {
 			await bench('catalogEntries', () => {
 				for (const _entry of catalogEntries(readRecords(fixture.bytes))) {

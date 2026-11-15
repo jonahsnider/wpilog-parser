@@ -53,7 +53,7 @@ export type DataRecord = Extract<DecodedRecord, {
 // @public
 export type DecodedRecord = {
     entryId: number;
-    timestamp: bigint;
+    timestamp: number;
 } & ({
     type: typeof RecordType.Control;
     payload: ControlRecordPayload;
@@ -153,7 +153,7 @@ export function parseStructSpecification(declaration: string): StructDeclaration
 // @public
 export type RawRecord = {
     entryId: number;
-    timestamp: bigint;
+    timestamp: number;
     payload: Uint8Array;
 };
 
@@ -164,7 +164,7 @@ export type ReadRecord = {
 } | {
     kind: 'control';
     entryId: number;
-    timestamp: bigint;
+    timestamp: number;
     payload: ControlRecordPayload;
 } | {
     kind: 'data';

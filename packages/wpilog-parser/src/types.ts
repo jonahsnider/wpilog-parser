@@ -48,7 +48,7 @@ export type ControlRecordPayload = StartControlRecord | FinishControlRecord | Se
 export type RawRecord = {
 	entryId: number;
 	/** Timestamp in microseconds. */
-	timestamp: bigint;
+	timestamp: number;
 	payload: Uint8Array;
 };
 
@@ -87,7 +87,7 @@ export function isDataRecord(record: DecodedRecord): record is DataRecord {
 export type DecodedRecord = {
 	entryId: number;
 	/** Timestamp in microseconds. */
-	timestamp: bigint;
+	timestamp: number;
 } & (
 	| { type: typeof RecordType.Control; payload: ControlRecordPayload }
 	| ({

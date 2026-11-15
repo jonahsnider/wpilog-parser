@@ -5,7 +5,7 @@ describe('isDataRecord', () => {
 	test('returns true for data records', ({ expect }) => {
 		const record: DecodedRecord = {
 			entryId: 1,
-			timestamp: 0n,
+			timestamp: 0,
 			type: RecordType.Double,
 			name: '/test',
 			metadata: '',
@@ -17,7 +17,7 @@ describe('isDataRecord', () => {
 	test('returns false for control records', ({ expect }) => {
 		const record: DecodedRecord = {
 			entryId: 0,
-			timestamp: 0n,
+			timestamp: 0,
 			type: RecordType.Control,
 			payload: { controlRecordType: 1, entryId: 1 },
 		};
@@ -27,7 +27,7 @@ describe('isDataRecord', () => {
 	test('narrows type to access name field', ({ expect }) => {
 		const record: DecodedRecord = {
 			entryId: 1,
-			timestamp: 0n,
+			timestamp: 0,
 			type: RecordType.String,
 			name: '/test/entry',
 			metadata: '',

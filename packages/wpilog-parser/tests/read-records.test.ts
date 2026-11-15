@@ -102,7 +102,7 @@ describe('readRecords', () => {
 			expect(dataRecord).toMatchObject({ kind: 'data' });
 			if (dataRecord.kind === 'data') {
 				expect(dataRecord.record.entryId).toBe(5);
-				expect(dataRecord.record.timestamp).toBe(0n);
+				expect(dataRecord.record.timestamp).toBe(0);
 			}
 		});
 
@@ -115,7 +115,7 @@ describe('readRecords', () => {
 			const dataRecord = results[1];
 			if (dataRecord.kind === 'data') {
 				expect(dataRecord.record.entryId).toBe(1);
-				expect(dataRecord.record.timestamp).toBe(128n);
+				expect(dataRecord.record.timestamp).toBe(128);
 			}
 		});
 	});
@@ -217,7 +217,7 @@ describe('readRecords', () => {
 			expect(results[1]).toStrictEqual({
 				kind: 'control',
 				entryId: 0,
-				timestamp: 0n,
+				timestamp: 0,
 				payload: {
 					controlRecordType: ControlRecordType.Start,
 					entryId: 1,
@@ -248,7 +248,7 @@ describe('readRecords', () => {
 			expect(results[1]).toStrictEqual({
 				kind: 'control',
 				entryId: 0,
-				timestamp: 0n,
+				timestamp: 0,
 				payload: {
 					controlRecordType: ControlRecordType.Finish,
 					entryId: 1,
@@ -283,7 +283,7 @@ describe('readRecords', () => {
 			expect(results[1]).toStrictEqual({
 				kind: 'control',
 				entryId: 0,
-				timestamp: 0n,
+				timestamp: 0,
 				payload: {
 					controlRecordType: ControlRecordType.SetMetadata,
 					entryId: 1,
@@ -304,7 +304,7 @@ describe('readRecords', () => {
 			expect(data.kind).toBe('data');
 			if (data.kind === 'data') {
 				expect(data.record.entryId).toBe(5);
-				expect(data.record.timestamp).toBe(100n);
+				expect(data.record.timestamp).toBe(100);
 				expect(data.record.payload).toStrictEqual(payload);
 			}
 		});

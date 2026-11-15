@@ -47,7 +47,7 @@ import { parseDataLog, RecordType } from 'wpilog-parser';
 for (const record of parseDataLog(bytes)) {
 	if (record.type === RecordType.Struct && record.name === '/Robot/Localization/EstimatedPose') {
 		console.log(record.timestamp, record.payload);
-		// 18688018n {
+		// 18688018 {
 		//   translation: { x: 10.289, y: 0.47 },
 		//   rotation: { value: 1.5707961072652017 },
 		// }
@@ -74,7 +74,7 @@ When DriverStation logging is on, every WPILOG has these `boolean` entries:
 | `/DS:test`       | `true` during test mode.                                            |
 | `/DS:estop`      | `true` if e-stopped.                                                |
 
-The mode flags (`autonomous`, `test`) reflect what the DS _would_ run if enabled, so check `/DS:enabled` together with them. Timestamps are microseconds (`bigint`).
+The mode flags (`autonomous`, `test`) reflect what the DS _would_ run if enabled, so check `/DS:enabled` together with them. Timestamps are microseconds (`number`).
 
 ### Tracking enable/mode durations
 
@@ -91,8 +91,8 @@ function modeOf(auto: boolean, test: boolean): Mode {
 let enabled = false;
 let auto = false;
 let test = false;
-let enabledSince: bigint | null = null;
-const totals = { auto: 0n, teleop: 0n, test: 0n };
+let enabledSince: number | null = null;
+const totals = { auto: 0, teleop: 0, test: 0 };
 
 for (const r of parseDataLog(bytes)) {
 	if (!isDataRecord(r) || r.type !== RecordType.Boolean) continue;
@@ -113,6 +113,6 @@ for (const r of parseDataLog(bytes)) {
 	}
 }
 
-// Durations in microseconds; divide by 1_000_000n for seconds.
+// Durations in microseconds; divide by 1e6 for seconds.
 console.log(totals);
 ```

@@ -32,7 +32,7 @@ test('the adapter preserves offsets, array suffixes, schema cycles and queue ord
 	const offset = new ByteOffset(1);
 	expect(registry.decode('Outer', new Uint8Array([99, 42]), offset)).toBe('Inner');
 	expect(offset.get()).toBe(1);
-	queue.queueStructRecord('Inner', { entryId: 1, timestamp: 0n, payload: new Uint8Array([7]) });
+	queue.queueStructRecord('Inner', { entryId: 1, timestamp: 0, payload: new Uint8Array([7]) });
 	registry.register('Inner', 'uint8 value');
 	expect(decoded).toEqual([{ value: { value: 7 } }]);
 	expect(registry.decode('Outer', new Uint8Array([99, 42]), offset)).toEqual({ value: { value: 42 } });

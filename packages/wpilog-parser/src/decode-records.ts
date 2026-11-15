@@ -32,7 +32,7 @@ type PlainDataRecord = Exclude<DataRecord, { structName: string }>;
  */
 function dataRecord<T extends PlainDataRecord['type']>(
 	entryId: number,
-	timestamp: bigint,
+	timestamp: number,
 	name: string,
 	metadata: string,
 	type: T,
@@ -118,7 +118,7 @@ class RecordDecoder {
 		this.structRegistry = new StructRegistry(this.structDecodeQueue);
 	}
 
-	decodeControl(entryId: number, timestamp: bigint, payload: ControlRecordPayload): DecodedRecord {
+	decodeControl(entryId: number, timestamp: number, payload: ControlRecordPayload): DecodedRecord {
 		switch (payload.controlRecordType) {
 			case ControlRecordType.Start:
 				this.context.set(payload.entryId, {
@@ -144,7 +144,7 @@ class RecordDecoder {
 
 	decodeData(
 		entryId: number,
-		timestamp: bigint,
+		timestamp: number,
 		bytes: Uint8Array,
 		view: DataView,
 		payloadOffset: number,

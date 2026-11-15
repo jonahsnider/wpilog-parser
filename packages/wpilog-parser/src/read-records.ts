@@ -59,7 +59,7 @@ export type ReadRecord =
 	| {
 			kind: 'control';
 			entryId: number;
-			timestamp: bigint;
+			timestamp: number;
 			payload: ControlRecordPayload;
 	  }
 	| { kind: 'data'; record: RawRecord };
@@ -124,29 +124,28 @@ function readVarInt(view: DataView, offset: number, length: number): number {
 	}
 }
 
-function readTimestamp(view: DataView, offset: number, length: number): bigint {
+function readTimestamp(view: DataView, offset: number, length: number): number {
 	switch (length) {
 		case 1:
-			return BigInt(view.getUint8(offset));
+			return view.getUint8(offset);
 		case 2:
-			return BigInt(view.getUint16(offset, true));
+			return view.getUint16(offset, true);
 		case 3:
-			return BigInt(view.getUint16(offset, true) + view.getUint8(offset + 2) * 2 ** 16);
+			return view.getUint16(offset, true) + view.getUint8(offset + 2) * 2 ** 16;
 		case 4:
-			return BigInt(view.getUint32(offset, true));
-		// Up to six bytes fit exactly in a number; convert to bigint only once.
+			return view.getUint32(offset, true);
 		case 5:
-			return BigInt(view.getUint32(offset, true) + view.getUint8(offset + 4) * 2 ** 32);
+			return view.getUint32(offset, true) + view.getUint8(offset + 4) * 2 ** 32;
 		case 6:
-			return BigInt(view.getUint32(offset, true) + view.getUint16(offset + 4, true) * 2 ** 32);
-		case 7: {
-			// Seven bytes can exceed Number.MAX_SAFE_INTEGER, so combine chunks as bigints.
-			const low = view.getUint32(offset, true);
-			const high = view.getUint16(offset + 4, true) + view.getUint8(offset + 6) * 2 ** 16;
-			return (BigInt(high) << 32n) | BigInt(low);
-		}
+			return view.getUint32(offset, true) + view.getUint16(offset + 4, true) * 2 ** 32;
+		// Seven and eight byte timestamps can exceed Number.MAX_SAFE_INTEGER and round to the nearest double.
+		case 7:
+			return (
+				view.getUint32(offset, true) +
+				(view.getUint16(offset + 4, true) + view.getUint8(offset + 6) * 2 ** 16) * 2 ** 32
+			);
 		case 8:
-			return view.getBigUint64(offset, true);
+			return view.getUint32(offset, true) + view.getUint32(offset + 4, true) * 2 ** 32;
 		default:
 			throw new RangeError(`Invalid timestamp length ${length}`);
 	}
@@ -158,7 +157,7 @@ export class RecordCursor {
 	readonly view: DataView;
 	readonly header: DataLogHeader;
 	entryId = 0;
-	timestamp = 0n;
+	timestamp = 0;
 	payloadOffset = 0;
 	payloadSize = 0;
 	private offset: number;

@@ -9,7 +9,7 @@ describe('struct decode queue', () => {
 
 		const pose2dRecord: RawRecord = {
 			entryId: 1,
-			timestamp: 0n,
+			timestamp: 0,
 			payload: new Uint8Array(8 * 3),
 		};
 		queue.queueStructRecord('Pose2d', pose2dRecord);

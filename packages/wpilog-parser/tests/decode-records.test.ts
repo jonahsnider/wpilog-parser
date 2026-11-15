@@ -19,7 +19,7 @@ function startControl(
 	return {
 		kind: 'control',
 		entryId: 0,
-		timestamp: 0n,
+		timestamp: 0,
 		payload: {
 			controlRecordType: ControlRecordType.Start,
 			entryId,
@@ -34,7 +34,7 @@ function finishControl(entryId: number): ReadRecord {
 	return {
 		kind: 'control',
 		entryId: 0,
-		timestamp: 0n,
+		timestamp: 0,
 		payload: { controlRecordType: ControlRecordType.Finish, entryId },
 	};
 }
@@ -43,12 +43,12 @@ function setMetadataControl(entryId: number, entryMetadata: string): ReadRecord 
 	return {
 		kind: 'control',
 		entryId: 0,
-		timestamp: 0n,
+		timestamp: 0,
 		payload: { controlRecordType: ControlRecordType.SetMetadata, entryId, entryMetadata },
 	};
 }
 
-function dataRecord(entryId: number, payload: Uint8Array, timestamp = 0n): ReadRecord {
+function dataRecord(entryId: number, payload: Uint8Array, timestamp = 0): ReadRecord {
 	return { kind: 'data', record: { entryId, timestamp, payload } };
 }
 
@@ -105,10 +105,10 @@ describe('decodeRecords', () => {
 		const results = Array.from(decodeRecords(records)).filter((record) => record.type !== RecordType.Control);
 
 		expect(results).toStrictEqual([
-			{ entryId: 1, timestamp: 0n, name: '/entry-1', metadata: '', type: RecordType.Boolean, payload: true },
-			{ entryId: 2, timestamp: 0n, name: '/entry-2', metadata: '', type: RecordType.Int64, payload: -42n },
-			{ entryId: 3, timestamp: 0n, name: '/entry-3', metadata: '', type: RecordType.Float, payload: 1.5 },
-			{ entryId: 4, timestamp: 0n, name: '/entry-4', metadata: '', type: RecordType.Double, payload: Math.PI },
+			{ entryId: 1, timestamp: 0, name: '/entry-1', metadata: '', type: RecordType.Boolean, payload: true },
+			{ entryId: 2, timestamp: 0, name: '/entry-2', metadata: '', type: RecordType.Int64, payload: -42n },
+			{ entryId: 3, timestamp: 0, name: '/entry-3', metadata: '', type: RecordType.Float, payload: 1.5 },
+			{ entryId: 4, timestamp: 0, name: '/entry-4', metadata: '', type: RecordType.Double, payload: Math.PI },
 		]);
 	});
 
@@ -126,7 +126,7 @@ describe('decodeRecords', () => {
 		expect(dataResults).toStrictEqual([
 			{
 				entryId: 1,
-				timestamp: 0n,
+				timestamp: 0,
 				name: '/enabled',
 				metadata: 'initial',
 				type: RecordType.Boolean,
@@ -134,7 +134,7 @@ describe('decodeRecords', () => {
 			},
 			{
 				entryId: 1,
-				timestamp: 0n,
+				timestamp: 0,
 				name: '/enabled',
 				metadata: 'updated',
 				type: RecordType.Boolean,
@@ -159,7 +159,7 @@ describe('decodeRecords', () => {
 		expect(structResults).toStrictEqual([
 			{
 				entryId: 1,
-				timestamp: 0n,
+				timestamp: 0,
 				name: '/old-entry',
 				metadata: 'old-metadata',
 				type: RecordType.Struct,

@@ -1,5 +1,17 @@
 # Changelog
 
+## [4.2.0](https://github.com/jonahsnider/wpilog-parser/compare/wpilog-parser-v4.1.0...wpilog-parser-v4.2.0) (2026-11-16)
+
+
+### Features
+
+* report truncated logs on parser generators ([a2d2c1a](https://github.com/jonahsnider/wpilog-parser/commit/a2d2c1adb0e0d32276a260e795cd7e5c99cfd2a4))
+
+
+### Bug Fixes
+
+* decode int64[] values as signed ([d359514](https://github.com/jonahsnider/wpilog-parser/commit/d3595142e2d2c447eb2da3d9af419dcd910d34b3))
+
 ## [4.1.0](https://github.com/jonahsnider/wpilog-parser/compare/wpilog-parser-v4.0.0...wpilog-parser-v4.1.0) (2026-11-16)
 
 

@@ -162,6 +162,8 @@ export class RecordCursor {
 	payloadSize = 0;
 	/** Byte offset of the next record. */
 	offset: number;
+	/** Whether the input ended partway through a record. */
+	truncated = false;
 
 	constructor(input: DataLogInput) {
 		const source = openDataLog(input);
@@ -186,6 +188,7 @@ export class RecordCursor {
 
 		if (offset + entryIdLength + payloadSizeLength + timestampLength > total) {
 			this.offset = total;
+			this.truncated = true;
 			return false;
 		}
 
@@ -198,6 +201,7 @@ export class RecordCursor {
 
 		if (offset + payloadSize > total) {
 			this.offset = total;
+			this.truncated = true;
 			return false;
 		}
 
@@ -221,15 +225,27 @@ export type DataLogGenerator<T> = Generator<T> & {
 	 * Divide by the input's `byteLength` to estimate progress; it equals `byteLength` once parsing finishes.
 	 */
 	readonly bytesRead: number;
+	/**
+	 * Whether the input ended partway through a record, such as a log cut off by a power loss.
+	 * The incomplete record is not yielded. This is `false` until the parser reaches the end of the input.
+	 */
+	readonly truncated: boolean;
 };
 
-/** Expose a parser's position on its generator without adding work to the per-record loop. */
-export function withBytesRead<T>(records: Generator<T>, getBytesRead: () => number): DataLogGenerator<T> {
-	return Object.defineProperty(records, 'bytesRead', { get: getBytesRead }) as DataLogGenerator<T>;
+/** Expose a parser's progress on its generator without adding work to the per-record loop. */
+export function withProgress<T>(
+	records: Generator<T>,
+	getBytesRead: () => number,
+	getTruncated: () => boolean,
+): DataLogGenerator<T> {
+	return Object.defineProperties(records, {
+		bytesRead: { get: getBytesRead },
+		truncated: { get: getTruncated },
+	}) as DataLogGenerator<T>;
 }
 
 // Opening the log inside the generator and keeping offsets in locals benchmarks faster than using RecordCursor
-function* readRawRecords(input: DataLogInput, progress: { offset: number }): Generator<ReadRecord> {
+function* readRawRecords(input: DataLogInput, progress: { offset: number; truncated: boolean }): Generator<ReadRecord> {
 	const { bytes, view, header, recordsOffset } = openDataLog(input);
 	progress.offset = recordsOffset;
 	const total = bytes.byteLength;
@@ -245,6 +261,7 @@ function* readRawRecords(input: DataLogInput, progress: { offset: number }): Gen
 
 		if (offset + entryIdLength + payloadSizeLength + timestampLength > total) {
 			progress.offset = total;
+			progress.truncated = true;
 			return;
 		}
 
@@ -257,6 +274,7 @@ function* readRawRecords(input: DataLogInput, progress: { offset: number }): Gen
 
 		if (offset + payloadSize > total) {
 			progress.offset = total;
+			progress.truncated = true;
 			return;
 		}
 
@@ -280,6 +298,10 @@ function* readRawRecords(input: DataLogInput, progress: { offset: number }): Gen
  * or an intermediate transformation are not needed.
  */
 export function readRecords(input: DataLogInput): DataLogGenerator<ReadRecord> {
-	const progress = { offset: 0 };
-	return withBytesRead(readRawRecords(input, progress), () => progress.offset);
+	const progress = { offset: 0, truncated: false };
+	return withProgress(
+		readRawRecords(input, progress),
+		() => progress.offset,
+		() => progress.truncated,
+	);
 }

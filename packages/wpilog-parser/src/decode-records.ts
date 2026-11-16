@@ -4,7 +4,7 @@ import {
 	type ReadRecord,
 	RecordCursor,
 	readControlRecordPayload,
-	withBytesRead,
+	withProgress,
 } from './read-records.ts';
 import { StructDecodeQueue } from './struct/struct-decode-queue.ts';
 import { StructRegistry } from './struct/struct-registry.ts';
@@ -229,7 +229,11 @@ export function parseDataLog(
 	options: DecodeRecordsOptions = { strict: false },
 ): DataLogGenerator<DecodedRecord> {
 	const state: { cursor?: RecordCursor } = {};
-	return withBytesRead(decodeCursorRecords(input, options, state), () => state.cursor?.offset ?? 0);
+	return withProgress(
+		decodeCursorRecords(input, options, state),
+		() => state.cursor?.offset ?? 0,
+		() => state.cursor?.truncated ?? false,
+	);
 }
 
 function* decodeCursorRecords(

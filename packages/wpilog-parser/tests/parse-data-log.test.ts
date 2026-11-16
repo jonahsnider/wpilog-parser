@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { isDeepStrictEqual } from 'node:util';
 import { describe, test } from 'vite-plus/test';
-import { decodeRecords, parseDataLog, readRecords, RecordType } from '../src/index.ts';
+import { type DataLogGenerator, decodeRecords, parseDataLog, readRecords, RecordType } from '../src/index.ts';
 
 describe('parseDataLog', () => {
 	test('matches the composed parser for a real log', async ({ expect }) => {
@@ -66,6 +66,24 @@ describe('parseDataLog', () => {
 				previous = records.bytesRead;
 			}
 			expect(records.bytesRead).toBe(bytes.byteLength);
+		}
+	});
+
+	test('reports whether the log ended partway through a record', async ({ expect }) => {
+		const bytes = await readFile(new URL('./fixtures/logs/WPILIB_TBD_aba74b981a582b4b.wpilog', import.meta.url));
+
+		const parsers: Array<(input: Uint8Array) => DataLogGenerator<unknown>> = [parseDataLog, readRecords];
+		for (const parse of parsers) {
+			const complete = parse(bytes);
+			Array.from(complete);
+			expect(complete.truncated).toBe(false);
+
+			// Cutting off the final byte leaves the last record's payload incomplete
+			const truncated = parse(bytes.subarray(0, -1));
+			expect(truncated.truncated).toBe(false);
+			Array.from(truncated);
+			expect(truncated.truncated).toBe(true);
+			expect(truncated.bytesRead).toBe(bytes.byteLength - 1);
 		}
 	});
 

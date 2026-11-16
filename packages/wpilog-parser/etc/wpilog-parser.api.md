@@ -36,6 +36,7 @@ export type ControlRecordType = (typeof ControlRecordType)[keyof typeof ControlR
 // @public
 export type DataLogGenerator<T> = Generator<T> & {
     readonly bytesRead: number;
+    readonly truncated: boolean;
 };
 
 // @public

@@ -132,6 +132,18 @@ describe('decodeRecords', () => {
 		]);
 	});
 
+	test('decodes int64[] payloads as signed', ({ expect }) => {
+		const records = [
+			headerRecord(),
+			startControl(1, 'int64[]'),
+			dataRecord(1, new Uint8Array(new BigInt64Array([-1n, 42n, -(2n ** 63n)]).buffer)),
+		];
+
+		const result = Array.from(decodeRecords(records)).find((record) => record.type === RecordType.Int64Array);
+
+		expect(result?.payload).toStrictEqual([-1n, 42n, -(2n ** 63n)]);
+	});
+
 	test('applies metadata updates to subsequent data records', ({ expect }) => {
 		const records = [
 			headerRecord(),

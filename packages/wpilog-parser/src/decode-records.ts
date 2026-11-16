@@ -290,7 +290,7 @@ function decodeNonScalarPayload(
 		case 'int64[]': {
 			const payload: bigint[] = [];
 			for (let i = 0; i < raw.payload.byteLength; i += 8) {
-				payload.push(view.getBigUint64(i, true));
+				payload.push(view.getBigInt64(i, true));
 			}
 			return dataRecord(entry, timestamp, RecordType.Int64Array, payload);
 		}

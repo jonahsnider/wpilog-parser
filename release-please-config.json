@@ -5,8 +5,7 @@
 	"packages": {
 		"packages/wpilog-parser": {
 			"release-type": "node",
-			"component": "wpilog-parser",
-			"include-component-in-tag": false
+			"component": "wpilog-parser"
 		},
 		"packages/wpilib-struct": {
 			"release-type": "node",

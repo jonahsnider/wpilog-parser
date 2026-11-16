@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.1.0](https://github.com/jonahsnider/wpilog-parser/compare/wpilog-parser-v4.0.0...wpilog-parser-v4.1.0) (2026-11-16)
+
+
+### Features
+
+* expose bytesRead on parser generators to track progress ([db6bf86](https://github.com/jonahsnider/wpilog-parser/commit/db6bf86fa6b897a36f48a547f5f5134ac40c51e1))
+
 ## [4.0.0](https://github.com/jonahsnider/wpilog-parser/compare/v3.2.2...v4.0.0) (2026-11-15)
 
 

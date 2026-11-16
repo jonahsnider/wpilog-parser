@@ -160,7 +160,8 @@ export class RecordCursor {
 	timestamp = 0;
 	payloadOffset = 0;
 	payloadSize = 0;
-	private offset: number;
+	/** Byte offset of the next record. */
+	offset: number;
 
 	constructor(input: DataLogInput) {
 		const source = openDataLog(input);
@@ -213,15 +214,24 @@ export class RecordCursor {
 	}
 }
 
-/**
- * Read raw WPILOG records from an in-memory buffer.
- *
- * Yields a header record first, then control and data records in order.
- * Data record payloads are not decoded. Prefer `parseDataLog` when raw records
- * or an intermediate transformation are not needed.
- */
-export function* readRecords(input: DataLogInput): Generator<ReadRecord> {
+/** A generator of records that also reports how far it has read through the input. */
+export type DataLogGenerator<T> = Generator<T> & {
+	/**
+	 * Number of input bytes consumed so far, including the file header. This is `0` until the first record is read.
+	 * Divide by the input's `byteLength` to estimate progress; it equals `byteLength` once parsing finishes.
+	 */
+	readonly bytesRead: number;
+};
+
+/** Expose a parser's position on its generator without adding work to the per-record loop. */
+export function withBytesRead<T>(records: Generator<T>, getBytesRead: () => number): DataLogGenerator<T> {
+	return Object.defineProperty(records, 'bytesRead', { get: getBytesRead }) as DataLogGenerator<T>;
+}
+
+// Opening the log inside the generator and keeping offsets in locals benchmarks faster than using RecordCursor
+function* readRawRecords(input: DataLogInput, progress: { offset: number }): Generator<ReadRecord> {
 	const { bytes, view, header, recordsOffset } = openDataLog(input);
+	progress.offset = recordsOffset;
 	const total = bytes.byteLength;
 	let offset = recordsOffset;
 
@@ -234,6 +244,7 @@ export function* readRecords(input: DataLogInput): Generator<ReadRecord> {
 		const timestampLength = 1 + ((bitfield >> 4) & 0b111);
 
 		if (offset + entryIdLength + payloadSizeLength + timestampLength > total) {
+			progress.offset = total;
 			return;
 		}
 
@@ -245,11 +256,13 @@ export function* readRecords(input: DataLogInput): Generator<ReadRecord> {
 		offset += timestampLength;
 
 		if (offset + payloadSize > total) {
+			progress.offset = total;
 			return;
 		}
 
 		const payload = bytes.subarray(offset, offset + payloadSize);
 		offset += payloadSize;
+		progress.offset = offset;
 
 		if (entryId === 0) {
 			yield { kind: 'control', entryId, timestamp, payload: readControlRecordPayload(payload) };
@@ -257,4 +270,16 @@ export function* readRecords(input: DataLogInput): Generator<ReadRecord> {
 			yield { kind: 'data', record: { entryId, timestamp, payload } };
 		}
 	}
+}
+
+/**
+ * Read raw WPILOG records from an in-memory buffer.
+ *
+ * Yields a header record first, then control and data records in order.
+ * Data record payloads are not decoded. Prefer `parseDataLog` when raw records
+ * or an intermediate transformation are not needed.
+ */
+export function readRecords(input: DataLogInput): DataLogGenerator<ReadRecord> {
+	const progress = { offset: 0 };
+	return withBytesRead(readRawRecords(input, progress), () => progress.offset);
 }

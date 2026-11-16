@@ -1,4 +1,11 @@
-import { type DataLogInput, type ReadRecord, RecordCursor, readControlRecordPayload } from './read-records.ts';
+import {
+	type DataLogGenerator,
+	type DataLogInput,
+	type ReadRecord,
+	RecordCursor,
+	readControlRecordPayload,
+	withBytesRead,
+} from './read-records.ts';
 import { StructDecodeQueue } from './struct/struct-decode-queue.ts';
 import { StructRegistry } from './struct/struct-registry.ts';
 import { ByteOffset } from './byte-offset.ts';
@@ -217,11 +224,21 @@ export function* decodeRecords(
  * intermediate records produced by composing {@link readRecords} and
  * {@link decodeRecords} while preserving the same output and strict-mode behavior.
  */
-export function* parseDataLog(
+export function parseDataLog(
 	input: DataLogInput,
 	options: DecodeRecordsOptions = { strict: false },
+): DataLogGenerator<DecodedRecord> {
+	const state: { cursor?: RecordCursor } = {};
+	return withBytesRead(decodeCursorRecords(input, options, state), () => state.cursor?.offset ?? 0);
+}
+
+function* decodeCursorRecords(
+	input: DataLogInput,
+	options: DecodeRecordsOptions,
+	state: { cursor?: RecordCursor },
 ): Generator<DecodedRecord> {
 	const cursor = new RecordCursor(input);
+	state.cursor = cursor;
 	const decoder = new RecordDecoder(options);
 
 	while (cursor.next()) {

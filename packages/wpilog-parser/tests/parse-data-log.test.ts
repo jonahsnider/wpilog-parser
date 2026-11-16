@@ -55,6 +55,20 @@ describe('parseDataLog', () => {
 		expect(() => Array.from(parseDataLog(bytes, { strict: true }))).toThrowError('No type registered for entry ID 1');
 	});
 
+	test('reports bytes read as records are consumed', async ({ expect }) => {
+		const bytes = await readFile(new URL('./fixtures/logs/WPILIB_TBD_aba74b981a582b4b.wpilog', import.meta.url));
+
+		for (const records of [parseDataLog(bytes), readRecords(bytes)]) {
+			let previous = records.bytesRead;
+			for (const _record of records) {
+				expect(records.bytesRead).toBeGreaterThanOrEqual(previous);
+				expect(records.bytesRead).toBeLessThanOrEqual(bytes.byteLength);
+				previous = records.bytesRead;
+			}
+			expect(records.bytesRead).toBe(bytes.byteLength);
+		}
+	});
+
 	test('validates the file header', ({ expect }) => {
 		expect(() => Array.from(parseDataLog(new Uint8Array(0)))).toThrowError('Not a WPILOG file');
 	});

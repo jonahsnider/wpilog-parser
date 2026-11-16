@@ -1,4 +1,4 @@
-export { readRecords, type ReadRecord, type DataLogInput } from './read-records.ts';
+export { readRecords, type ReadRecord, type DataLogInput, type DataLogGenerator } from './read-records.ts';
 export { decodeRecords, type DecodeRecordsOptions, parseDataLog } from './decode-records.ts';
 export {
 	type DataLogHeader,

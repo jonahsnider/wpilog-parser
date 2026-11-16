@@ -34,6 +34,11 @@ export const ControlRecordType: {
 export type ControlRecordType = (typeof ControlRecordType)[keyof typeof ControlRecordType];
 
 // @public
+export type DataLogGenerator<T> = Generator<T> & {
+    readonly bytesRead: number;
+};
+
+// @public
 export type DataLogHeader = {
     version: {
         major: number;
@@ -144,7 +149,7 @@ export const KnownStructTypeName: {
 export type KnownStructTypeName = (typeof KnownStructTypeName)[keyof typeof KnownStructTypeName];
 
 // @public
-export function parseDataLog(input: DataLogInput, options?: DecodeRecordsOptions): Generator<DecodedRecord>;
+export function parseDataLog(input: DataLogInput, options?: DecodeRecordsOptions): DataLogGenerator<DecodedRecord>;
 
 // @public
 export function parseStructSpecification(declaration: string): StructDeclaration[];
@@ -171,7 +176,7 @@ export type ReadRecord = {
 };
 
 // @public
-export function readRecords(input: DataLogInput): Generator<ReadRecord>;
+export function readRecords(input: DataLogInput): DataLogGenerator<ReadRecord>;
 
 // @public
 export const RecordType: {

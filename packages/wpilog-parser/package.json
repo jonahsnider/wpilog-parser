@@ -41,7 +41,7 @@
 		"test": "vp test"
 	},
 	"dependencies": {
-		"@bomb.sh/tab": "^0.0.22",
+		"@bomb.sh/tab": "^0.0.23",
 		"@drizzle-team/brocli": "^0.12.1",
 		"@toon-format/toon": "^4.1.1",
 		"nostics": "^1.3.0",

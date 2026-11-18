@@ -74,7 +74,7 @@ When DriverStation logging is on, every WPILOG has these `boolean` entries:
 | `/DS:test`       | `true` during test mode.                                            |
 | `/DS:estop`      | `true` if e-stopped.                                                |
 
-The mode flags (`autonomous`, `test`) reflect what the DS _would_ run if enabled, so check `/DS:enabled` together with them. Timestamps are microseconds (`number`).
+The mode flags (`autonomous`, `test`) reflect what the DS _would_ run if enabled, so check `/DS:enabled` together with them. Timestamps are microseconds (`number`). They can be negative for values set before logging started, such as NetworkTables values published before the log was opened.
 
 ### Tracking enable/mode durations
 

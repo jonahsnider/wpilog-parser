@@ -24,6 +24,10 @@ describe('timestamps', () => {
 				(1n << 53n) - 1n,
 				1n << 53n,
 				(1n << 53n) + 1n,
+				(1n << 63n) - 1n,
+				1n << 63n,
+				// -14,544,616 µs, like a NetworkTables value set before logging started
+				(1n << 64n) - 14_544_616n,
 				max - 1n,
 				max,
 			];
@@ -40,13 +44,15 @@ describe('timestamps', () => {
 					remaining >>= 8n;
 				}
 
+				// Timestamps are int64_t: only an 8-byte timestamp can set the sign bit.
+				// Values beyond Number.MAX_SAFE_INTEGER round to the nearest number.
+				const expected = Number(BigInt.asIntN(64, timestamp));
 				const records = [...readRecords(bytes)];
 				expect(records).toHaveLength(2);
-				// Values above Number.MAX_SAFE_INTEGER round to the nearest number
-				expect(records[1]).toMatchObject({ kind: 'data', record: { timestamp: Number(timestamp) } });
+				expect(records[1]).toMatchObject({ kind: 'data', record: { timestamp: expected } });
 				const cursor = new RecordCursor(bytes);
 				expect(cursor.next()).toBe(true);
-				expect(cursor.timestamp).toBe(Number(timestamp));
+				expect(cursor.timestamp).toBe(expected);
 				expect(cursor.next()).toBe(false);
 			}
 		});

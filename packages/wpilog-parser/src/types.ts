@@ -55,7 +55,10 @@ export type CatalogEntry = {
 /** A raw (undecoded) data log record from the binary format. */
 export type RawRecord = {
 	entryId: number;
-	/** Timestamp in microseconds. */
+	/**
+	 * Timestamp in microseconds. Can be negative for values set before logging started,
+	 * such as NetworkTables values published before the log was opened.
+	 */
 	timestamp: number;
 	payload: Uint8Array;
 };
@@ -93,7 +96,10 @@ export function isDataRecord(record: DecodedRecord): record is DataRecord {
 
 /** A decoded data log record. */
 export type DecodedRecord = {
-	/** Timestamp in microseconds. */
+	/**
+	 * Timestamp in microseconds. Can be negative for values set before logging started,
+	 * such as NetworkTables values published before the log was opened.
+	 */
 	timestamp: number;
 } & (
 	| { entryId: number; type: typeof RecordType.Control; payload: ControlRecordPayload }

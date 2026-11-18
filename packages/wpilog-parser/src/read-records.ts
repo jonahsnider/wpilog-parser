@@ -144,8 +144,10 @@ function readTimestamp(view: DataView, offset: number, length: number): number {
 				view.getUint32(offset, true) +
 				(view.getUint16(offset + 4, true) + view.getUint8(offset + 6) * 2 ** 16) * 2 ** 32
 			);
+		// Timestamps are int64_t, so only a full eight bytes can carry the sign bit.
+		// WPILib writes negative timestamps for NetworkTables values set before logging started.
 		case 8:
-			return view.getUint32(offset, true) + view.getUint32(offset + 4, true) * 2 ** 32;
+			return view.getUint32(offset, true) + view.getInt32(offset + 4, true) * 2 ** 32;
 		default:
 			throw new RangeError(`Invalid timestamp length ${length}`);
 	}

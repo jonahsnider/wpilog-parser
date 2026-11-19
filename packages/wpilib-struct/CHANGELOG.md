@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/jonahsnider/wpilog-parser/compare/wpilib-struct-v1.0.2...wpilib-struct-v1.1.0) (2026-11-19)
+
+
+### Features
+
+* **wpilib-struct:** encode structs ([3ca83e8](https://github.com/jonahsnider/wpilog-parser/commit/3ca83e8f5f1fd148b37c142b31f5eed24318f9e7))
+
 ## [1.0.2](https://github.com/jonahsnider/wpilog-parser/compare/wpilib-struct-v1.0.1...wpilib-struct-v1.0.2) (2026-11-15)
 
 

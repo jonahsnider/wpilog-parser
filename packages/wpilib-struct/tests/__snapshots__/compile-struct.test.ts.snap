@@ -174,3 +174,270 @@ const v2 = view.getUint8(base + 2, true);
   ],
 ]
 `;
+
+exports[`compiled struct encoder > AllTypes encodes like closure compilation > AllTypes 1`] = `
+[
+  [
+    "helpers",
+    ""use strict";
+		const { requireField, toArray, toBigInteger, toBoolean, toInteger, toNumber, toObject, writeString } = helpers;
+		function s0(view, bytes, base, value) {
+			toObject(value, "AllTypes");
+requireField(value, "flags", "AllTypes.flags");
+const v0 = value["flags"];
+const a0 = toArray(v0, 2, "AllTypes.flags");
+for (let i = 0; i < 2; i++) view.setUint8(base + 0 + i * 1, toBoolean(a0[i], "AllTypes.flags") ? 1 : 0);
+requireField(value, "a", "AllTypes.a");
+const v1 = value["a"];
+view.setInt8(base + 2, toInteger(v1, -128, 127, "AllTypes.a"));
+requireField(value, "b", "AllTypes.b");
+const v2 = value["b"];
+view.setUint8(base + 3, toInteger(v2, 0, 255, "AllTypes.b"));
+requireField(value, "c", "AllTypes.c");
+const v3 = value["c"];
+view.setInt16(base + 4, toInteger(v3, -32768, 32767, "AllTypes.c"), true);
+requireField(value, "d", "AllTypes.d");
+const v4 = value["d"];
+view.setUint16(base + 6, toInteger(v4, 0, 65535, "AllTypes.d"), true);
+requireField(value, "e", "AllTypes.e");
+const v5 = value["e"];
+view.setInt32(base + 8, toInteger(v5, -2147483648, 2147483647, "AllTypes.e"), true);
+requireField(value, "f", "AllTypes.f");
+const v6 = value["f"];
+view.setUint32(base + 12, toInteger(v6, 0, 4294967295, "AllTypes.f"), true);
+requireField(value, "g", "AllTypes.g");
+const v7 = value["g"];
+view.setBigInt64(base + 16, toBigInteger(v7, -9223372036854775808n, 9223372036854775807n, "AllTypes.g"), true);
+requireField(value, "h", "AllTypes.h");
+const v8 = value["h"];
+view.setBigUint64(base + 24, toBigInteger(v8, 0n, 18446744073709551615n, "AllTypes.h"), true);
+requireField(value, "i", "AllTypes.i");
+const v9 = value["i"];
+view.setFloat32(base + 32, toNumber(v9, "AllTypes.i"), true);
+requireField(value, "j", "AllTypes.j");
+const v10 = value["j"];
+view.setFloat32(base + 36, toNumber(v10, "AllTypes.j"), true);
+requireField(value, "k", "AllTypes.k");
+const v11 = value["k"];
+view.setFloat64(base + 40, toNumber(v11, "AllTypes.k"), true);
+requireField(value, "l", "AllTypes.l");
+const v12 = value["l"];
+view.setFloat64(base + 48, toNumber(v12, "AllTypes.l"), true);
+requireField(value, "text", "AllTypes.text");
+const v13 = value["text"];
+writeString(bytes, base + 56, 4, v13, "AllTypes.text");
+requireField(value, "letter", "AllTypes.letter");
+const v14 = value["letter"];
+writeString(bytes, base + 60, 1, v14, "AllTypes.letter");
+requireField(value, "mode", "AllTypes.mode");
+const v15 = value["mode"];
+view.setUint8(base + 61, toInteger(v15, 0, 255, "AllTypes.mode"));
+requireField(value, "values", "AllTypes.values");
+const v16 = value["values"];
+const a16 = toArray(v16, 2, "AllTypes.values");
+for (let i = 0; i < 2; i++) view.setInt16(base + 62 + i * 2, toInteger(a16[i], -32768, 32767, "AllTypes.values"), true);
+		}
+		return s0;",
+  ],
+]
+`;
+
+exports[`compiled struct encoder > Bits encodes like closure compilation > Bits 1`] = `
+[
+  [
+    "helpers",
+    ""use strict";
+		const { requireField, toArray, toBigInteger, toBoolean, toInteger, toNumber, toObject, writeString } = helpers;
+		function s0(view, bytes, base, value) {
+			toObject(value, "Bits");
+requireField(value, "low", "Bits.low");
+const b0_0 = (toInteger(value["low"], -8, 7, "Bits.low") & 15) << 0;
+requireField(value, "high", "Bits.high");
+const b0_1 = (toInteger(value["high"], 0, 15, "Bits.high") & 15) << 4;
+view.setUint8(base + 0, b0_0 | b0_1);
+requireField(value, "wide", "Bits.wide");
+const b1_0 = (toInteger(value["wide"], 0, 511, "Bits.wide") & 511) << 0;
+requireField(value, "flag", "Bits.flag");
+const b1_1 = (toBoolean(value["flag"], "Bits.flag") ? 1 : 0) << 9;
+view.setUint16(base + 1, b1_0 | b1_1, true);
+requireField(value, "signed", "Bits.signed");
+const b2_0 = BigInt.asUintN(5, toBigInteger(value["signed"], -16n, 15n, "Bits.signed")) << 0n;
+view.setBigUint64(base + 3, b2_0, true);
+requireField(value, "tail", "Bits.tail");
+const v3 = value["tail"];
+view.setUint8(base + 11, toInteger(v3, 0, 255, "Bits.tail"));
+		}
+		return s0;",
+  ],
+]
+`;
+
+exports[`compiled struct encoder > ControlWord matches closure compilation > ControlWord 1`] = `
+[
+  [
+    "helpers",
+    ""use strict";
+		const { requireField, toArray, toBigInteger, toBoolean, toInteger, toNumber, toObject, writeString } = helpers;
+		function s0(view, bytes, base, value) {
+			toObject(value, "ControlWord");
+requireField(value, "opModeHash", "ControlWord.opModeHash");
+const b0_0 = BigInt.asUintN(56, toBigInteger(value["opModeHash"], 0n, 72057594037927935n, "ControlWord.opModeHash")) << 0n;
+requireField(value, "robotMode", "ControlWord.robotMode");
+const b0_1 = BigInt.asUintN(2, toBigInteger(value["robotMode"], 0n, 3n, "ControlWord.robotMode")) << 56n;
+requireField(value, "enabled", "ControlWord.enabled");
+const b0_2 = toBoolean(value["enabled"], "ControlWord.enabled") ? 288230376151711744n : 0n;
+requireField(value, "eStop", "ControlWord.eStop");
+const b0_3 = toBoolean(value["eStop"], "ControlWord.eStop") ? 576460752303423488n : 0n;
+requireField(value, "fmsAttached", "ControlWord.fmsAttached");
+const b0_4 = toBoolean(value["fmsAttached"], "ControlWord.fmsAttached") ? 1152921504606846976n : 0n;
+requireField(value, "dsAttached", "ControlWord.dsAttached");
+const b0_5 = toBoolean(value["dsAttached"], "ControlWord.dsAttached") ? 2305843009213693952n : 0n;
+view.setBigUint64(base + 0, b0_0 | b0_1 | b0_2 | b0_3 | b0_4 | b0_5, true);
+		}
+		return s0;",
+  ],
+]
+`;
+
+exports[`compiled struct encoder > Names encodes like closure compilation > Names 1`] = `
+[
+  [
+    "helpers",
+    ""use strict";
+		const { requireField, toArray, toBigInteger, toBoolean, toInteger, toNumber, toObject, writeString } = helpers;
+		function s0(view, bytes, base, value) {
+			toObject(value, "Names");
+requireField(value, "__proto__", "Names.__proto__");
+const v0 = value["__proto__"];
+view.setUint8(base + 0, toInteger(v0, 0, 255, "Names.__proto__"));
+requireField(value, "constructor", "Names.constructor");
+const v1 = value["constructor"];
+view.setUint8(base + 1, toInteger(v1, 0, 255, "Names.constructor"));
+requireField(value, "default", "Names.default");
+const v2 = value["default"];
+view.setUint8(base + 2, toInteger(v2, 0, 255, "Names.default"));
+		}
+		return s0;",
+  ],
+]
+`;
+
+exports[`compiled struct encoder > Outer encodes like closure compilation > Outer 1`] = `
+[
+  [
+    "helpers",
+    ""use strict";
+		const { requireField, toArray, toBigInteger, toBoolean, toInteger, toNumber, toObject, writeString } = helpers;
+		function s1(view, bytes, base, value) {
+			toObject(value, "Inner");
+requireField(value, "value", "Inner.value");
+const b0_0 = (toInteger(value["value"], -8, 7, "Inner.value") & 15) << 0;
+requireField(value, "flag", "Inner.flag");
+const b0_1 = (toBoolean(value["flag"], "Inner.flag") ? 1 : 0) << 4;
+view.setUint8(base + 0, b0_0 | b0_1);
+		}
+function s0(view, bytes, base, value) {
+			toObject(value, "Outer");
+requireField(value, "prefix", "Outer.prefix");
+const v0 = value["prefix"];
+view.setUint8(base + 0, toInteger(v0, 0, 255, "Outer.prefix"));
+requireField(value, "items", "Outer.items");
+const v1 = value["items"];
+const a1 = toArray(v1, 2, "Outer.items");
+for (let i = 0; i < 2; i++) s1(view, bytes, base + 1 + i * 1, a1[i]);
+requireField(value, "tail", "Outer.tail");
+const v2 = value["tail"];
+view.setUint8(base + 3, toInteger(v2, 0, 255, "Outer.tail"));
+		}
+		return s0;",
+  ],
+]
+`;
+
+exports[`compiled struct encoder > Pose2d matches closure compilation > Pose2d 1`] = `
+[
+  [
+    "helpers",
+    ""use strict";
+		const { requireField, toArray, toBigInteger, toBoolean, toInteger, toNumber, toObject, writeString } = helpers;
+		function s1(view, bytes, base, value) {
+			toObject(value, "Translation2d");
+requireField(value, "x", "Translation2d.x");
+const v0 = value["x"];
+view.setFloat64(base + 0, toNumber(v0, "Translation2d.x"), true);
+requireField(value, "y", "Translation2d.y");
+const v1 = value["y"];
+view.setFloat64(base + 8, toNumber(v1, "Translation2d.y"), true);
+		}
+function s2(view, bytes, base, value) {
+			toObject(value, "Rotation2d");
+requireField(value, "value", "Rotation2d.value");
+const v0 = value["value"];
+view.setFloat64(base + 0, toNumber(v0, "Rotation2d.value"), true);
+		}
+function s0(view, bytes, base, value) {
+			toObject(value, "Pose2d");
+requireField(value, "translation", "Pose2d.translation");
+const v0 = value["translation"];
+s1(view, bytes, base + 0, v0);
+requireField(value, "rotation", "Pose2d.rotation");
+const v1 = value["rotation"];
+s2(view, bytes, base + 16, v1);
+		}
+		return s0;",
+  ],
+]
+`;
+
+exports[`compiled struct encoder > SwerveStates matches closure compilation > SwerveStates 1`] = `
+[
+  [
+    "helpers",
+    ""use strict";
+		const { requireField, toArray, toBigInteger, toBoolean, toInteger, toNumber, toObject, writeString } = helpers;
+		function s2(view, bytes, base, value) {
+			toObject(value, "Rotation2d");
+requireField(value, "value", "Rotation2d.value");
+const v0 = value["value"];
+view.setFloat64(base + 0, toNumber(v0, "Rotation2d.value"), true);
+		}
+function s1(view, bytes, base, value) {
+			toObject(value, "SwerveModuleState");
+requireField(value, "speed", "SwerveModuleState.speed");
+const v0 = value["speed"];
+view.setFloat64(base + 0, toNumber(v0, "SwerveModuleState.speed"), true);
+requireField(value, "angle", "SwerveModuleState.angle");
+const v1 = value["angle"];
+s2(view, bytes, base + 8, v1);
+		}
+function s0(view, bytes, base, value) {
+			toObject(value, "SwerveStates");
+requireField(value, "states", "SwerveStates.states");
+const v0 = value["states"];
+const a0 = toArray(v0, 4, "SwerveStates.states");
+for (let i = 0; i < 4; i++) s1(view, bytes, base + 0 + i * 16, a0[i]);
+		}
+		return s0;",
+  ],
+]
+`;
+
+exports[`compiled struct encoder > Translation2d matches closure compilation > Translation2d 1`] = `
+[
+  [
+    "helpers",
+    ""use strict";
+		const { requireField, toArray, toBigInteger, toBoolean, toInteger, toNumber, toObject, writeString } = helpers;
+		function s0(view, bytes, base, value) {
+			toObject(value, "Translation2d");
+requireField(value, "x", "Translation2d.x");
+const v0 = value["x"];
+view.setFloat64(base + 0, toNumber(v0, "Translation2d.x"), true);
+requireField(value, "y", "Translation2d.y");
+const v1 = value["y"];
+view.setFloat64(base + 8, toNumber(v1, "Translation2d.y"), true);
+		}
+		return s0;",
+  ],
+]
+`;

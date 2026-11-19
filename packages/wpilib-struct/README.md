@@ -30,7 +30,19 @@ Use `decodeArray()` to decode an array of structs, passing the base schema name 
 
 Schemas can be registered in any order. If a schema is missing, decoding returns its name instead of a decoded value.
 
-Reuse a registry for repeated decoding. Schemas are compiled lazily into reusable decoders.
-In environments where Content Security Policy blocks runtime code generation, decoding falls back to a CSP-safe implementation.
+### Encoding
+
+```ts
+const bytes = registry.encode('Translation2d', { x: 1.5, y: 2.5 });
+```
+
+`encode()` returns a new `Uint8Array`, and `encodeArray()` encodes an array of structs. `encodeInto()` writes into an existing buffer at a byte offset and returns the number of bytes written.
+Like decoding, encoding returns the name of a missing schema instead of bytes.
+
+Integer fields accept a `number` (safe integers only) or a `bigint`. `char` fields take a string that must fit in the field as UTF-8; shorter strings are padded with zero bytes.
+Values that are missing, have the wrong type, or are out of range for their field or bit-field width throw a `TypeError` or `RangeError`. Fields not in the schema are ignored.
+
+Reuse a registry for repeated decoding and encoding. Schemas are compiled lazily into reusable decoders and encoders.
+In environments where Content Security Policy blocks runtime code generation, both fall back to a CSP-safe implementation.
 
 A summary of the full API is available in [wpilib-struct.api.md](https://github.com/jonahsnider/wpilog-parser/blob/main/packages/wpilib-struct/etc/wpilib-struct.api.md).

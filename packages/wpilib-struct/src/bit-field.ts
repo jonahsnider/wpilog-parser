@@ -85,7 +85,7 @@ function readUnsignedInteger(view: DataView, offset: number, byteLength: number)
 	}
 }
 
-function isSignedInteger(type: string): boolean {
+export function isSignedInteger(type: string): boolean {
 	switch (type) {
 		case KnownStructTypeName.Int8:
 		case KnownStructTypeName.Int16:

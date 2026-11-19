@@ -3,8 +3,11 @@ import type { StructPayload } from './types.ts';
 import { BitFieldTracker } from './bit-field.ts';
 import { compileStructClosures } from './compile-struct-closures.ts';
 import { allowsCodeGeneration, compileStruct, type CompiledStructDecoder } from './compile-struct.ts';
+import { compileStructEncoderClosures } from './compile-struct-encoder-closures.ts';
+import { compileStructEncoder } from './compile-struct-encoder.ts';
 import { parseStructSpecification } from './parse-struct.ts';
 import { StructDependencyGraph } from './struct-dependency-graph.ts';
+import type { CompiledStructEncoder } from './struct-encoding.ts';
 import { KnownStructTypeName, type StructDeclaration, type StructSpecification } from './types.ts';
 
 /** Options for runtime code generation. */
@@ -13,11 +16,12 @@ export type StructRegistryOptions = {
 	codeGeneration?: boolean;
 };
 
-/** Reusable schemas, dependency resolution, layout sizes, and decoders. */
+/** Reusable schemas, dependency resolution, layout sizes, decoders, and encoders. */
 export class StructRegistry {
 	private readonly definitions = new Map<string, StructSpecification>();
 	private readonly byteLengths = new Map<string, number>();
 	private readonly decoders = new Map<string, CompiledStructDecoder>();
+	private readonly encoders = new Map<string, CompiledStructEncoder>();
 	private codeGenerationAllowed?: boolean;
 	private readonly graph = new StructDependencyGraph();
 
@@ -36,6 +40,7 @@ export class StructRegistry {
 			// A changed schema can affect the layout of any enclosing struct.
 			this.byteLengths.clear();
 			this.decoders.clear();
+			this.encoders.clear();
 		}
 		this.definitions.set(name, specification);
 	}
@@ -88,16 +93,71 @@ export class StructRegistry {
 		return decoder(view, payload, offset);
 	}
 
+	/**
+	 * Encode one struct into new bytes. Missing schemas are returned by name.
+	 * Integer fields accept a `number` or `bigint`; `char` fields accept a string that fits as UTF-8 and are zero-padded.
+	 */
+	encode(structName: string, value: StructPayload): Uint8Array | string {
+		const byteLength = this.getByteLength(structName);
+		if (typeof byteLength === 'string') return byteLength;
+		const bytes = new Uint8Array(byteLength);
+		this.getEncoder(structName)(new DataView(bytes.buffer), bytes, 0, value);
+		return bytes;
+	}
+
+	/** Encode an array using its base type name. Missing schemas are returned by name. */
+	encodeArray(structName: string, values: readonly StructPayload[]): Uint8Array | string {
+		const byteLength = this.getByteLength(structName);
+		if (typeof byteLength === 'string') return byteLength;
+		if (byteLength === 0 && values.length > 0) {
+			throw new RangeError('Cannot encode an array of zero-length structs');
+		}
+		const bytes = new Uint8Array(byteLength * values.length);
+		const view = new DataView(bytes.buffer);
+		const encoder = this.getEncoder(structName);
+		for (let i = 0; i < values.length; i++) encoder(view, bytes, i * byteLength, values[i]);
+		return bytes;
+	}
+
+	/**
+	 * Encode one struct into existing bytes at a byte offset, returning the number of bytes written.
+	 * Missing schemas are returned by name. Bytes outside the struct are left unchanged.
+	 * If encoding throws, the struct's bytes in the target may be partially written.
+	 */
+	encodeInto(structName: string, value: StructPayload, target: Uint8Array, offset = 0): number | string {
+		const byteLength = this.getByteLength(structName);
+		if (typeof byteLength === 'string') return byteLength;
+		this.validatePayload(target, offset, byteLength);
+		const encoder = this.getEncoder(structName);
+
+		// Unused char bytes must be zero, whatever the target held before.
+		target.fill(0, offset, offset + byteLength);
+		encoder(new DataView(target.buffer, target.byteOffset, target.byteLength), target, offset, value);
+		return byteLength;
+	}
+
+	private getEncoder(name: string): CompiledStructEncoder {
+		return this.compile(this.encoders, name, compileStructEncoder, compileStructEncoderClosures);
+	}
+
 	private getDecoder(name: string): CompiledStructDecoder {
-		const existing = this.decoders.get(name);
+		return this.compile(this.decoders, name, compileStruct, compileStructClosures);
+	}
+
+	private compile<T>(
+		cache: Map<string, T>,
+		name: string,
+		generate: (registry: StructRegistry, name: string) => T,
+		closures: (registry: StructRegistry, name: string) => T,
+	): T {
+		const existing = cache.get(name);
 		if (existing) return existing;
 
 		this.codeGenerationAllowed ??= allowsCodeGeneration();
+		let compiled: T | undefined;
 		if (this.codeGenerationAllowed) {
 			try {
-				const decoder = compileStruct(this, name);
-				this.decoders.set(name, decoder);
-				return decoder;
+				compiled = generate(this, name);
 			} catch (error) {
 				// Also handle a policy change between the probe and compilation.
 				if (!(error instanceof EvalError)) throw error;
@@ -105,9 +165,9 @@ export class StructRegistry {
 			}
 		}
 
-		const decoder = compileStructClosures(this, name);
-		this.decoders.set(name, decoder);
-		return decoder;
+		compiled ??= closures(this, name);
+		cache.set(name, compiled);
+		return compiled;
 	}
 
 	private validatePayload(payload: Uint8Array, offset: number, byteLength: number): void {

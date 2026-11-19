@@ -43,3 +43,27 @@ describe(fixture.name, { concurrent: false }, () => {
 		expect(decoded).toStrictEqual(decode(payloads[0]!));
 	});
 });
+
+for (const fixture of STRUCT_FIXTURES.filter(({ name }) => name === 'Pose2d' || name === 'ControlWord')) {
+	describe(fixture.name, { concurrent: false }, () => {
+		test('encode 32 struct payloads (schemas already registered)', async ({ bench }) => {
+			const { registry, payloads } = createStructFixture(fixture);
+			const closuresRegistry = new StructRegistry({ codeGeneration: false });
+			for (const [name, schema] of Object.entries(fixture.schemas)) closuresRegistry.register(name, schema);
+			const values = payloads.map((bytes) => registry.decode(fixture.name, bytes) as StructPayload);
+			const encode = (value: StructPayload) => registry.encode(fixture.name, value);
+			const encodeClosures = (value: StructPayload) => closuresRegistry.encode(fixture.name, value);
+			for (const [index, value] of values.entries()) {
+				expect(encode(value)).toStrictEqual(payloads[index]!.slice());
+				expect(encodeClosures(value)).toStrictEqual(payloads[index]!.slice());
+			}
+
+			let encoded: unknown[] = [];
+			await bench.compare(
+				bench('generated', () => (encoded = values.map(encode))),
+				bench('compiled closures', () => (encoded = values.map(encodeClosures))),
+			);
+			expect(encoded).toHaveLength(values.length);
+		});
+	});
+}

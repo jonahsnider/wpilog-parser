@@ -238,6 +238,10 @@ describe('DataLogWriter', () => {
 		writer.addStructSchema('Inner', 'uint16 value', 4);
 		writer.append(entryId, { inner: { value: 513 } }, 5);
 		expect(() => writer.addStructSchema('Bad', 'int32')).toThrow(Diagnostic);
+		// A replacement schema whose record fails is neither used nor skipped when it is added again.
+		expect(() => writer.addStructSchema('Inner', 'uint32 value', 0.5)).toThrow(TypeError);
+		writer.append(entryId, { inner: { value: 514 } }, 6);
+		writer.addStructSchema('Inner', 'uint32 value', 7);
 
 		expect(dataRecords(await readAll(writer))).toStrictEqual([
 			{ name: '/.schema/struct:Outer', timestamp: 0, payload: 'Inner inner' },
@@ -245,6 +249,8 @@ describe('DataLogWriter', () => {
 			{ name: '/value', timestamp: 3, payload: { inner: { value: 1 } } },
 			{ name: '/.schema/struct:Inner', timestamp: 4, payload: 'uint16 value' },
 			{ name: '/value', timestamp: 5, payload: { inner: { value: 513 } } },
+			{ name: '/value', timestamp: 6, payload: { inner: { value: 514 } } },
+			{ name: '/.schema/struct:Inner', timestamp: 7, payload: 'uint32 value' },
 		]);
 	});
 

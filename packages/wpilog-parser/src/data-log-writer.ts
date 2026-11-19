@@ -273,9 +273,13 @@ export class DataLogWriter {
 				return;
 			case 'structschema': {
 				const schema = toString(value, entry);
+				const encoded = TEXT_ENCODER.encode(schema);
+				// Register the schema only once its record can't fail, so a schema is never used without being written.
+				const at = this.beginRecord(entryId, timestamp, encoded.byteLength);
 				withStructDiagnostics(() => this.structs.register(entry.structName!, schema));
 				this.schemas.set(entry.structName!, schema);
-				this.appendBytes(entryId, timestamp, TEXT_ENCODER.encode(schema));
+				this.bytes.set(encoded, at);
+				this.length = at + encoded.byteLength;
 				return;
 			}
 			case 'boolean[]': {

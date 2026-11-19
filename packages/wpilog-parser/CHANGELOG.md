@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.2.1](https://github.com/jonahsnider/wpilog-parser/compare/wpilog-parser-v4.2.0...wpilog-parser-v4.2.1) (2026-11-19)
+
+
+### Bug Fixes
+
+* decode 8-byte record timestamps as signed ([20180df](https://github.com/jonahsnider/wpilog-parser/commit/20180dfe3d90db79ba60f5772eafe9413f59e4c8))
+* **deps:** update dependency [@bomb](https://github.com/bomb).sh/tab to ^0.0.23 ([#102](https://github.com/jonahsnider/wpilog-parser/issues/102)) ([dd5f507](https://github.com/jonahsnider/wpilog-parser/commit/dd5f50732214d9e91f1817831fb7f4cee25e9674))
+
 ## [4.2.0](https://github.com/jonahsnider/wpilog-parser/compare/wpilog-parser-v4.1.0...wpilog-parser-v4.2.0) (2026-11-16)
 
 

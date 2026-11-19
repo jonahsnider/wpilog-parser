@@ -52,6 +52,25 @@ export type DataLogHeader = {
 export type DataLogInput = Uint8Array | ArrayBuffer;
 
 // @public
+export type DataLogValue = boolean | number | bigint | string | readonly boolean[] | readonly (number | bigint)[] | readonly string[] | StructPayload | readonly StructPayload[] | Uint8Array;
+
+// @public
+export class DataLogWriter {
+    constructor(options?: DataLogWriterOptions);
+    addStructSchema(name: string, schema: string, timestamp?: number): void;
+    append(entryId: number, value: DataLogValue, timestamp?: number): void;
+    finish(entryId: number, timestamp?: number): void;
+    flush(): Uint8Array;
+    setMetadata(entryId: number, metadata: string, timestamp?: number): void;
+    start(name: string, type: string, metadata?: string, timestamp?: number): number;
+}
+
+// @public
+export type DataLogWriterOptions = {
+    extraHeader?: string;
+};
+
+// @public
 export type DataRecord = Extract<DecodedRecord, {
     entry: CatalogEntry;
 }>;

@@ -1,6 +1,6 @@
 # wpilog-parser
 
-Read [WPILib data log (`.wpilog`)](https://docs.wpilib.org/en/stable/docs/software/telemetry/datalog.html) files in TypeScript & JavaScript.
+Read and write [WPILib data log (`.wpilog`)](https://docs.wpilib.org/en/stable/docs/software/telemetry/datalog.html) files in TypeScript & JavaScript.
 
 ## Install
 
@@ -27,6 +27,32 @@ Use `readRecords()` and `decodeRecords()` separately when you need access to raw
 
 Struct schemas are compiled lazily into reusable decoders, and struct payloads are returned as plain objects, including nested structs and arrays of structs.
 In environments where Content Security Policy blocks runtime code generation, decoding falls back to a CSP-safe implementation.
+
+### Writing logs
+
+```ts
+import { writeFile } from 'node:fs/promises';
+import { DataLogWriter } from 'wpilog-parser';
+
+const writer = new DataLogWriter();
+const speed = writer.start('/drive/speed', 'double');
+writer.addStructSchema('Translation2d', 'double x;double y');
+writer.addStructSchema('Rotation2d', 'double value');
+writer.addStructSchema('Pose2d', 'Translation2d translation;Rotation2d rotation');
+const pose = writer.start('/drive/pose', 'struct:Pose2d');
+
+writer.append(speed, 1.5, 20_000);
+writer.append(pose, { translation: { x: 1, y: 2 }, rotation: { value: 0.5 } }, 20_000);
+
+await writeFile('./example.wpilog', writer.flush());
+```
+
+`append()` encodes a value for the entry's type. It accepts the same payloads that `parseDataLog()` returns, and `int64` values can also be safe integer numbers. Other types, such as `raw`, take a `Uint8Array`.
+Add every struct schema an entry uses, including nested ones, with `addStructSchema()` before appending to the entry.
+
+Timestamps are integer microseconds. When a timestamp is omitted, the writer uses a monotonic clock counting from the JavaScript time origin.
+
+`flush()` returns the bytes written since the previous call, starting with the file header. To write a log while a program runs, append each flushed chunk to a file; the concatenated chunks form a complete log.
 
 A summary of the full API is available in [wpilog-parser.api.md](https://github.com/jonahsnider/wpilog-parser/blob/main/packages/wpilog-parser/etc/wpilog-parser.api.md).
 

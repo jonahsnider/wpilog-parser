@@ -65,5 +65,17 @@ export const diagnostics = defineDiagnostics({
 			fix: 'Register the struct definition before decoding its records.',
 		},
 		// WPILOG_R0014 was published for unsupported bit fields and must not be reused.
+		WPILOG_W0001: {
+			why: (p: { entryId: number }) => `Entry ID ${p.entryId} is not started`,
+			fix: 'Use an ID returned by start() for an entry that has not been finished.',
+		},
+		WPILOG_W0002: {
+			why: (p: { name: string }) => `Entry ${p.name} is already started`,
+			fix: 'Reuse the existing entry ID, or finish the entry before starting it again.',
+		},
+		WPILOG_W0003: {
+			why: (p: { name: string; entry: string }) => `Missing struct schema ${p.name} for entry ${p.entry}`,
+			fix: (p: { name: string }) => `Add the ${p.name} schema with addStructSchema() before appending values.`,
+		},
 	},
 });

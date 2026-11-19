@@ -1,5 +1,24 @@
 # Changelog
 
+## [4.3.0](https://github.com/jonahsnider/wpilog-parser/compare/wpilog-parser-v4.2.1...wpilog-parser-v4.3.0) (2026-11-19)
+
+
+### Features
+
+* write WPILOG files with DataLogWriter ([22f737d](https://github.com/jonahsnider/wpilog-parser/commit/22f737dd9be65915755dc305c5a97fcc39435dfb))
+
+
+### Bug Fixes
+
+* register struct schemas only once their record can be written ([63076ae](https://github.com/jonahsnider/wpilog-parser/commit/63076ae79fc1fcbf68e06cc8b301814171204427))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * wpilib-struct bumped to 1.1.0
+
 ## [4.2.1](https://github.com/jonahsnider/wpilog-parser/compare/wpilog-parser-v4.2.0...wpilog-parser-v4.2.1) (2026-11-19)
 
 

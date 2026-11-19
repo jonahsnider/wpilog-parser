@@ -31,10 +31,13 @@ In environments where Content Security Policy blocks runtime code generation, de
 ### Writing logs
 
 ```ts
-import { writeFile } from 'node:fs/promises';
+import { createWriteStream } from 'node:fs';
+import { Writable } from 'node:stream';
 import { DataLogWriter } from 'wpilog-parser';
 
 const writer = new DataLogWriter();
+const done = writer.readable.pipeTo(Writable.toWeb(createWriteStream('./example.wpilog')));
+
 const speed = writer.start('/drive/speed', 'double');
 writer.addStructSchema('Translation2d', 'double x;double y');
 writer.addStructSchema('Rotation2d', 'double value');
@@ -44,7 +47,8 @@ const pose = writer.start('/drive/pose', 'struct:Pose2d');
 writer.append(speed, 1.5, 20_000);
 writer.append(pose, { translation: { x: 1, y: 2 }, rotation: { value: 0.5 } }, 20_000);
 
-await writeFile('./example.wpilog', writer.flush());
+writer.close();
+await done;
 ```
 
 `append()` encodes a value for the entry's type. It accepts the same payloads that `parseDataLog()` returns, and `int64` values can also be safe integer numbers. Other types, such as `raw`, take a `Uint8Array`.
@@ -52,7 +56,12 @@ Add every struct schema an entry uses, including nested ones, with `addStructSch
 
 Timestamps are integer microseconds. When a timestamp is omitted, the writer uses a monotonic clock counting from the JavaScript time origin.
 
-`flush()` returns the bytes written since the previous call, starting with the file header. To write a log while a program runs, append each flushed chunk to a file; the concatenated chunks form a complete log.
+`writer.readable` is a `ReadableStream` of the log's bytes, so it can be piped to any `WritableStream`, such as a file from the browser's File System API, or through a `CompressionStream`. Records are buffered in memory until the stream reads them, and the stream ends after `close()`. To build a log in memory, close the writer and read the whole stream:
+
+```ts
+writer.close();
+const bytes = new Uint8Array(await new Response(writer.readable).arrayBuffer());
+```
 
 A summary of the full API is available in [wpilog-parser.api.md](https://github.com/jonahsnider/wpilog-parser/blob/main/packages/wpilog-parser/etc/wpilog-parser.api.md).
 

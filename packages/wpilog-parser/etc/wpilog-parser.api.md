@@ -59,8 +59,9 @@ export class DataLogWriter {
     constructor(options?: DataLogWriterOptions);
     addStructSchema(name: string, schema: string, timestamp?: number): void;
     append(entryId: number, value: DataLogValue, timestamp?: number): void;
+    close(): void;
     finish(entryId: number, timestamp?: number): void;
-    flush(): Uint8Array;
+    readonly readable: ReadableStream<Uint8Array>;
     setMetadata(entryId: number, metadata: string, timestamp?: number): void;
     start(name: string, type: string, metadata?: string, timestamp?: number): number;
 }

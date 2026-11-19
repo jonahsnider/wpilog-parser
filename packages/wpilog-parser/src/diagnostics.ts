@@ -77,5 +77,9 @@ export const diagnostics = defineDiagnostics({
 			why: (p: { name: string; entry: string }) => `Missing struct schema ${p.name} for entry ${p.entry}`,
 			fix: (p: { name: string }) => `Add the ${p.name} schema with addStructSchema() before appending values.`,
 		},
+		WPILOG_W0004: {
+			why: 'The writer is closed',
+			fix: 'Write every record before calling close() or cancelling the readable stream.',
+		},
 	},
 });

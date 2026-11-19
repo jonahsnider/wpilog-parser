@@ -99,16 +99,26 @@ function toInt64(value: unknown, entry: WriterEntry): bigint {
 /**
  * Write a WPILOG file incrementally.
  *
- * Records are buffered in memory until {@link DataLogWriter.flush} returns them, so a log can be streamed to a file
- * while it is written, or built in memory and flushed once. Timestamps are integer microseconds. When omitted, they
+ * Records are buffered in memory until {@link DataLogWriter.readable} is read, so a log can be streamed to a file
+ * while it is written, or built in memory and read once. Timestamps are integer microseconds. When omitted, they
  * come from a monotonic clock that counts from the JavaScript time origin.
  *
  * Every method writes a complete record or, if it throws, nothing.
  */
 export class DataLogWriter {
+	/**
+	 * The log's bytes, starting with the file header. Each read returns every record written since the previous read,
+	 * waiting for the next record if there are none. The stream ends after {@link DataLogWriter.close}.
+	 * Cancelling it closes the writer and discards unread records.
+	 */
+	readonly readable: ReadableStream<Uint8Array>;
+
 	private bytes = new Uint8Array(4096);
 	private view = new DataView(this.bytes.buffer);
 	private length = 0;
+	private closed = false;
+	/** Resolves a read that is waiting for the next record. */
+	private wake?: () => void;
 	private nextEntryId = 1;
 	private readonly entries = new Map<number, WriterEntry>();
 	private readonly entryIds = new Map<string, number>();
@@ -124,16 +134,36 @@ export class DataLogWriter {
 		this.view.setUint32(8, extraHeader.byteLength, true);
 		this.bytes.set(extraHeader, 12);
 		this.length = 12 + extraHeader.byteLength;
+
+		this.readable = new ReadableStream(
+			{
+				pull: async (controller) => {
+					while (this.length === 0 && !this.closed) {
+						// Waking doesn't guarantee a record, since one can be discarded after it starts.
+						// oxlint-disable-next-line eslint/no-await-in-loop
+						await new Promise<void>((resolve) => (this.wake = resolve));
+					}
+					if (this.length > 0) {
+						controller.enqueue(this.bytes.slice(0, this.length));
+						this.length = 0;
+					}
+					if (this.closed) controller.close();
+				},
+				cancel: () => {
+					this.closed = true;
+					this.length = 0;
+				},
+			},
+			// Only take bytes when a reader asks for them, so each chunk holds every record written until then.
+			{ highWaterMark: 0 },
+		);
 	}
 
-	/**
-	 * Return the bytes written since the last flush, starting with the file header on the first flush.
-	 * Concatenating every returned chunk in order produces the complete log.
-	 */
-	flush(): Uint8Array {
-		const chunk = this.bytes.slice(0, this.length);
-		this.length = 0;
-		return chunk;
+	/** Stop writing. {@link DataLogWriter.readable} ends once its remaining records are read. */
+	close(): void {
+		if (this.closed) return;
+		this.closed = true;
+		this.wake?.();
 	}
 
 	/**
@@ -336,6 +366,9 @@ export class DataLogWriter {
 	 * setting `length` to the payload's end, so a record that throws while its payload is written is discarded.
 	 */
 	private beginRecord(entryId: number, timestamp: number, payloadSize: number): number {
+		if (this.closed) throw diagnostics.WPILOG_W0004();
+		// A waiting read resumes after this method returns, when the record is committed or discarded.
+		this.wake?.();
 		if (!Number.isSafeInteger(timestamp)) throw new TypeError('Timestamps must be safe integers in microseconds');
 		if (payloadSize > MAX_UINT32) throw new RangeError('Record payloads must be smaller than 4 GiB');
 

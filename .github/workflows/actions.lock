@@ -9,7 +9,7 @@ workflows:
         - 'voidzero-dev/setup-vp@v1.22.0'
     '.github/workflows/benchmarks.yml':
         - 'actions/checkout@v7.0.1'
-        - 'codspeedhq/action@v5.6.3'
+        - 'codspeedhq/action@v5.8.0'
         - 'voidzero-dev/setup-vp@v1.22.0'
     '.github/workflows/ci.yml':
         - 'actions/checkout@v7.0.1'
@@ -39,9 +39,9 @@ dependencies:
         commit: 'sha1-c5b2d67aa2274e7b5a18224e8171550871fc7e4a'
         owner_id: 114818642
         repo_id: 544055925
-    'codspeedhq/action@v5.6.3':
-        ref: 'v5.6.3'
-        commit: 'sha1-af75f77f17a054769abefaa42fe8dc2975469b5f'
+    'codspeedhq/action@v5.8.0':
+        ref: 'v5.8.0'
+        commit: 'sha1-b1f28b5eccf7cb5bfe6a2a89cb3053eb67f1150c'
         owner_id: 116658140
         repo_id: 561699778
         uses:

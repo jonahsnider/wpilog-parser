@@ -31,6 +31,24 @@ In environments where Content Security Policy blocks runtime code generation, de
 A value that can't be decoded for its entry's type, such as a struct value that doesn't match its schema or an invalid struct schema, throws by default.
 Apps that should show what they can of a damaged log can pass `{ invalidValues: 'raw' }` to get these as `raw` records holding their bytes instead, and keep reading.
 
+### Streaming
+
+`DataLogStreamParser` decodes a log as its bytes arrive, such as a download, without holding the whole file in memory. It produces the same records as `parseDataLog()`.
+
+```ts
+import { DataLogStreamParser } from 'wpilog-parser';
+
+const parser = new DataLogStreamParser();
+for await (const chunk of response.body) {
+	for (const record of parser.push(chunk)) {
+		console.log(record);
+	}
+}
+parser.end();
+```
+
+`push()` keeps only the bytes of a record split between chunks. `bytesRead` and `truncated` report progress and a cut-off last record, like they do on `parseDataLog()`'s generator.
+
 ### Writing logs
 
 ```ts

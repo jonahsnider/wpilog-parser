@@ -52,6 +52,16 @@ export type DataLogHeader = {
 export type DataLogInput = Uint8Array | ArrayBuffer;
 
 // @public
+export class DataLogStreamParser {
+    constructor(options?: DecodeRecordsOptions);
+    get bytesRead(): number;
+    end(): void;
+    get header(): DataLogHeader | undefined;
+    push(chunk: Uint8Array): Generator<DecodedRecord>;
+    get truncated(): boolean;
+}
+
+// @public
 export type DataLogValue = boolean | number | bigint | string | readonly boolean[] | readonly (number | bigint)[] | readonly string[] | StructPayload | readonly StructPayload[] | Uint8Array;
 
 // @public

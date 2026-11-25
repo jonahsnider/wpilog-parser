@@ -50,7 +50,7 @@ describe('timestamps', () => {
 				const records = [...readRecords(bytes)];
 				expect(records).toHaveLength(2);
 				expect(records[1]).toMatchObject({ kind: 'data', record: { timestamp: expected } });
-				const cursor = new RecordCursor(bytes);
+				const cursor = RecordCursor.open(bytes);
 				expect(cursor.next()).toBe(true);
 				expect(cursor.timestamp).toBe(expected);
 				expect(cursor.next()).toBe(false);

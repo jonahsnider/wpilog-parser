@@ -77,7 +77,7 @@ export type DecodeRecordsOptions = {
 	invalidValues?: 'throw' | 'raw';
 };
 
-class RecordDecoder {
+export class RecordDecoder {
 	readonly delayedRecords: DecodedRecord[] = [];
 	private readonly entries = new Map<StartControlRecord['entryId'], CatalogEntry>();
 	private readonly recordEntries = new WeakMap<RawRecord, CatalogEntry>();
@@ -273,7 +273,7 @@ function* decodeCursorRecords(
 	options: DecodeRecordsOptions,
 	state: { cursor?: RecordCursor },
 ): Generator<DecodedRecord> {
-	const cursor = new RecordCursor(input);
+	const cursor = RecordCursor.open(input);
 	state.cursor = cursor;
 	const decoder = new RecordDecoder(options);
 

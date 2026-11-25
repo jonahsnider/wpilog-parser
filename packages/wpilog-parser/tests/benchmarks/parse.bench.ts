@@ -1,5 +1,5 @@
 import { afterEach, test, describe, vi } from 'vite-plus/test';
-import { catalogEntries, decodeRecords, parseDataLog, readRecords } from '../../src/index.ts';
+import { catalogEntries, DataLogStreamParser, decodeRecords, parseDataLog, readRecords } from '../../src/index.ts';
 import { FIXTURES } from './shared.ts';
 
 // Select the production CSP closure decoder outside timed parsing, including warmup.
@@ -42,6 +42,19 @@ for (const fixture of FIXTURES) {
 				}
 			};
 			await bench.compare(bench('parseDataLog', parse), bench('closure parseDataLog', CLOSURE_STRUCTS, parse));
+		});
+
+		// Chunks the size of a typical download read, with records split between them
+		test('DataLogStreamParser (64 KiB chunks)', async ({ bench }) => {
+			await bench('DataLogStreamParser (64 KiB chunks)', () => {
+				const parser = new DataLogStreamParser();
+				for (let offset = 0; offset < fixture.bytes.byteLength; offset += 65_536) {
+					for (const _record of parser.push(fixture.bytes.subarray(offset, offset + 65_536))) {
+						// discard
+					}
+				}
+				parser.end();
+			}).run();
 		});
 
 		// Keep every decoded record alive, to measure the memory cost of holding a fully parsed log

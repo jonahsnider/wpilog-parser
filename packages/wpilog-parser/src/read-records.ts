@@ -74,17 +74,16 @@ function toUint8Array(input: DataLogInput): Uint8Array {
 	return new Uint8Array(input);
 }
 
-function openDataLog(input: DataLogInput): {
-	bytes: Uint8Array;
-	view: DataView;
-	header: DataLogHeader;
-	recordsOffset: number;
-} {
-	const bytes = toUint8Array(input);
-	const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-
+/**
+ * Read the file header at the start of `bytes`, or `undefined` if `bytes` ends before the header does.
+ * Throws if it isn't a WPILOG file.
+ */
+export function readHeader(
+	bytes: Uint8Array,
+	view: DataView,
+): { header: DataLogHeader; recordsOffset: number } | undefined {
 	if (bytes.byteLength < 12) {
-		throw diagnostics.WPILOG_R0002();
+		return undefined;
 	}
 	for (let i = 0; i < MAGIC.byteLength; i++) {
 		if (bytes[i] !== MAGIC[i]) {
@@ -95,18 +94,36 @@ function openDataLog(input: DataLogInput): {
 	const extraHeaderLength = view.getUint32(8, true);
 	const recordsOffset = 12 + extraHeaderLength;
 	if (recordsOffset > bytes.byteLength) {
-		throw diagnostics.WPILOG_R0004();
+		return undefined;
 	}
 
 	return {
-		bytes,
-		view,
 		header: {
 			version: { major: view.getUint8(7), minor: view.getUint8(6) },
 			extraHeader: TEXT_DECODER.decode(bytes.subarray(12, recordsOffset)),
 		},
 		recordsOffset,
 	};
+}
+
+/** The error for a file that ends before its header does, see {@link readHeader} */
+export function truncatedHeaderError(byteLength: number): Error {
+	return byteLength < 12 ? diagnostics.WPILOG_R0002() : diagnostics.WPILOG_R0004();
+}
+
+function openDataLog(input: DataLogInput): {
+	bytes: Uint8Array;
+	view: DataView;
+	header: DataLogHeader;
+	recordsOffset: number;
+} {
+	const bytes = toUint8Array(input);
+	const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+	const opened = readHeader(bytes, view);
+	if (!opened) {
+		throw truncatedHeaderError(bytes.byteLength);
+	}
+	return { bytes, view, ...opened };
 }
 
 function readVarInt(view: DataView, offset: number, length: number): number {
@@ -153,11 +170,10 @@ function readTimestamp(view: DataView, offset: number, length: number): number {
 	}
 }
 
-/** Mutable record cursor used by the fused decoder to avoid intermediate record allocations. */
+/** Mutable record cursor used by the fused and streaming decoders to avoid intermediate record allocations. */
 export class RecordCursor {
 	readonly bytes: Uint8Array;
 	readonly view: DataView;
-	readonly header: DataLogHeader;
 	entryId = 0;
 	timestamp = 0;
 	payloadOffset = 0;
@@ -167,12 +183,17 @@ export class RecordCursor {
 	/** Whether the input ended partway through a record. */
 	truncated = false;
 
-	constructor(input: DataLogInput) {
-		const source = openDataLog(input);
-		this.bytes = source.bytes;
-		this.view = source.view;
-		this.header = source.header;
-		this.offset = source.recordsOffset;
+	/** Read the records of a WPILOG file */
+	static open(input: DataLogInput): RecordCursor {
+		const { bytes, view, recordsOffset } = openDataLog(input);
+		return new RecordCursor(bytes, view, recordsOffset);
+	}
+
+	/** Read the records in `bytes` starting at `offset` */
+	constructor(bytes: Uint8Array, view: DataView, offset: number) {
+		this.bytes = bytes;
+		this.view = view;
+		this.offset = offset;
 	}
 
 	next(): boolean {

@@ -1,5 +1,20 @@
 # Changelog
 
+## [4.4.1](https://github.com/jonahsnider/wpilog-parser/compare/wpilog-parser-v4.4.0...wpilog-parser-v4.4.1) (2026-11-25)
+
+
+### Bug Fixes
+
+* release packages whose npm publish failed ([5ea6a5c](https://github.com/jonahsnider/wpilog-parser/commit/5ea6a5cbacc2bb30faba08def48f8154d88d9045))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * wpilib-protobuf bumped to 1.0.1
+    * wpilib-struct bumped to 1.1.1
+
 ## [4.4.0](https://github.com/jonahsnider/wpilog-parser/compare/wpilog-parser-v4.3.0...wpilog-parser-v4.4.0) (2026-11-25)
 
 

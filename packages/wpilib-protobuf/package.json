@@ -1,6 +1,6 @@
 {
 	"name": "wpilib-protobuf",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Decode WPILib protobuf values from their schemas",
 	"homepage": "https://github.com/jonahsnider/wpilog-parser/tree/main/packages/wpilib-protobuf#readme",
 	"license": "MIT",

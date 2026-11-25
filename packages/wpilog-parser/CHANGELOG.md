@@ -1,5 +1,21 @@
 # Changelog
 
+## [4.4.0](https://github.com/jonahsnider/wpilog-parser/compare/wpilog-parser-v4.3.0...wpilog-parser-v4.4.0) (2026-11-25)
+
+
+### Features
+
+* decode protobuf entries ([a65cf69](https://github.com/jonahsnider/wpilog-parser/commit/a65cf69ebefe0f1f26a584e1d5545d8ba373561f))
+* parse logs from chunks as they arrive with DataLogStreamParser ([7cb23ca](https://github.com/jonahsnider/wpilog-parser/commit/7cb23ca3a650938bf6d86b58377d2b1b1d6ddb6e))
+* yield values that can't be decoded as raw records with invalidValues ([27b2758](https://github.com/jonahsnider/wpilog-parser/commit/27b2758f1c60ff63d99f2f2742abae216adb9e77))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * wpilib-protobuf bumped to 1.0.0
+
 ## [4.3.0](https://github.com/jonahsnider/wpilog-parser/compare/wpilog-parser-v4.2.1...wpilog-parser-v4.3.0) (2026-11-19)
 
 

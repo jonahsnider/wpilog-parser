@@ -1,5 +1,5 @@
 {
-	"packages/wpilib-protobuf": "0.0.0",
+	"packages/wpilib-protobuf": "1.0.0",
 	"packages/wpilib-struct": "1.1.0",
-	"packages/wpilog-parser": "4.3.0"
+	"packages/wpilog-parser": "4.4.0"
 }

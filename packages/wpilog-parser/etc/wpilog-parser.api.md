@@ -134,6 +134,7 @@ export function decodeRecords(records: Iterable<ReadRecord>, options?: DecodeRec
 // @public
 export type DecodeRecordsOptions = {
     strict?: boolean;
+    invalidValues?: 'throw' | 'raw';
 };
 
 // @public (undocumented)

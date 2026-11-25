@@ -63,6 +63,16 @@ for (const record of parseDataLog(bytes, { strict: true })) {
 }
 ```
 
+### Invalid values
+
+Parsing throws on a value that can't be decoded, such as a struct value that doesn't match its schema. To read the rest of the log anyway, yield those values as `raw` records:
+
+```ts
+for (const record of parseDataLog(bytes, { invalidValues: 'raw' })) {
+	// record.type is 'raw' for values that couldn't be decoded
+}
+```
+
 ## Robot state cheatsheet
 
 When DriverStation logging is on, every WPILOG has these `boolean` entries:

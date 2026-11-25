@@ -28,6 +28,9 @@ Use `readRecords()` and `decodeRecords()` separately when you need access to raw
 Struct schemas are compiled lazily into reusable decoders, and struct payloads are returned as plain objects, including nested structs and arrays of structs.
 In environments where Content Security Policy blocks runtime code generation, decoding falls back to a CSP-safe implementation.
 
+A value that can't be decoded for its entry's type, such as a struct value that doesn't match its schema or an invalid struct schema, throws by default.
+Apps that should show what they can of a damaged log can pass `{ invalidValues: 'raw' }` to get these as `raw` records holding their bytes instead, and keep reading.
+
 ### Writing logs
 
 ```ts

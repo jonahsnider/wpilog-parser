@@ -67,6 +67,14 @@ export type DecodeRecordsOptions = {
 	 * such orphan records are silently skipped.
 	 */
 	strict?: boolean;
+	/**
+	 * What to do with a data record whose value can't be decoded for its entry's type, such as a struct value that
+	 * doesn't match its schema, an invalid struct schema, or a boolean that isn't 0 or 1.
+	 * `'throw'` (default) throws. `'raw'` yields it as a `raw` record holding its bytes and keeps reading, which suits
+	 * apps that should show what they can of a log with a few bad values.
+	 * Values whose struct schema is invalid wait for a valid one, like values whose schema hasn't been logged.
+	 */
+	invalidValues?: 'throw' | 'raw';
 };
 
 class RecordDecoder {
@@ -84,29 +92,35 @@ class RecordDecoder {
 				const entry = this.recordEntries.get(raw);
 				if (!entry) continue;
 
-				const structName = entry.type.slice(STRUCT_PREFIX.length);
-				if (entry.type.endsWith(STRUCT_ARRAY_SUFFIX)) {
-					const payload = this.structRegistry.decodeArray(structName, raw.payload);
-					if (typeof payload !== 'string') {
-						this.delayedRecords.push({
-							entry,
-							timestamp: raw.timestamp,
-							type: RecordType.StructArray,
-							structName,
-							payload,
-						});
+				try {
+					const structName = entry.type.slice(STRUCT_PREFIX.length);
+					if (entry.type.endsWith(STRUCT_ARRAY_SUFFIX)) {
+						const payload = this.structRegistry.decodeArray(structName, raw.payload);
+						if (typeof payload !== 'string') {
+							this.delayedRecords.push({
+								entry,
+								timestamp: raw.timestamp,
+								type: RecordType.StructArray,
+								structName,
+								payload,
+							});
+						}
+					} else {
+						const payload = this.structRegistry.decode(structName, raw.payload);
+						if (typeof payload !== 'string') {
+							this.delayedRecords.push({
+								entry,
+								timestamp: raw.timestamp,
+								type: RecordType.Struct,
+								structName,
+								payload,
+							});
+						}
 					}
-				} else {
-					const payload = this.structRegistry.decode(structName, raw.payload);
-					if (typeof payload !== 'string') {
-						this.delayedRecords.push({
-							entry,
-							timestamp: raw.timestamp,
-							type: RecordType.Struct,
-							structName,
-							payload,
-						});
-					}
+				} catch (error) {
+					// Caught per record, so one invalid value doesn't drop the other values waiting for this schema
+					if (this.options.invalidValues !== 'raw') throw error;
+					this.delayedRecords.push(dataRecord(entry, raw.timestamp, RecordType.Raw, new Uint8Array(raw.payload)));
 				}
 			}
 		});
@@ -154,6 +168,24 @@ class RecordDecoder {
 			}
 			return undefined;
 		}
+		if (this.options.invalidValues !== 'raw') {
+			return this.decodeValue(entry, timestamp, bytes, view, payloadOffset, payloadSize);
+		}
+		try {
+			return this.decodeValue(entry, timestamp, bytes, view, payloadOffset, payloadSize);
+		} catch {
+			return dataRecord(entry, timestamp, RecordType.Raw, bytes.slice(payloadOffset, payloadOffset + payloadSize));
+		}
+	}
+
+	private decodeValue(
+		entry: CatalogEntry,
+		timestamp: number,
+		bytes: Uint8Array,
+		view: DataView,
+		payloadOffset: number,
+		payloadSize: number,
+	): DecodedRecord | undefined {
 		switch (entry.type) {
 			case 'boolean':
 				return dataRecord(entry, timestamp, RecordType.Boolean, byteToBoolean(view.getUint8(payloadOffset)));
@@ -169,7 +201,7 @@ class RecordDecoder {
 			payloadOffset === 0 && payloadSize === bytes.byteLength
 				? bytes
 				: bytes.subarray(payloadOffset, payloadOffset + payloadSize);
-		const raw = { entryId, timestamp, payload };
+		const raw = { entryId: entry.entryId, timestamp, payload };
 		const payloadView = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
 		const decoded = decodeNonScalarPayload(raw, entry, payloadView, this.structRegistry, this.structDecodeQueue);
 		if (!decoded) {

@@ -10,7 +10,6 @@
 		"check": "vp run build && vp check",
 		"dev": "vp run --filter wpilog-parser dev",
 		"prepare": "vp config",
-		"pack:check": "vp run api:check && node scripts/check-packages.ts",
 		"start": "vp run --filter wpilog-parser start",
 		"test": "vp run build && vp test run"
 	},

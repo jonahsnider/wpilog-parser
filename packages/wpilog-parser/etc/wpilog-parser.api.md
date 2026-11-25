@@ -4,6 +4,9 @@
 
 ```ts
 
+import { ProtobufPayload } from 'wpilib-protobuf';
+import { ProtobufValue } from 'wpilib-protobuf';
+
 // @public
 export function catalogEntries(records: Iterable<ReadRecord>): Generator<CatalogEntry>;
 
@@ -136,6 +139,10 @@ export type DecodedRecord = {
     type: typeof RecordType.StructArray;
     structName: string;
     payload: StructPayload[];
+} | {
+    type: typeof RecordType.Protobuf;
+    messageName: string;
+    payload: ProtobufPayload;
 })));
 
 // @public
@@ -186,6 +193,10 @@ export function parseDataLog(input: DataLogInput, options?: DecodeRecordsOptions
 // @public
 export function parseStructSpecification(declaration: string): StructDeclaration[];
 
+export { ProtobufPayload }
+
+export { ProtobufValue }
+
 // @public
 export type RawRecord = {
     entryId: number;
@@ -225,6 +236,7 @@ export const RecordType: {
     readonly StringArray: 'string[]';
     readonly Struct: 'struct';
     readonly StructArray: 'struct[]';
+    readonly Protobuf: 'protobuf';
     readonly Raw: 'raw';
 };
 

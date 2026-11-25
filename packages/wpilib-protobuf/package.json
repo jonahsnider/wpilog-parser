@@ -1,0 +1,46 @@
+{
+	"name": "wpilib-protobuf",
+	"version": "0.0.0",
+	"description": "Decode WPILib protobuf values from their schemas",
+	"homepage": "https://github.com/jonahsnider/wpilog-parser/tree/main/packages/wpilib-protobuf#readme",
+	"license": "MIT",
+	"author": {
+		"name": "Jonah Snider",
+		"email": "jonah@jonahsnider.com",
+		"url": "https://jonahsnider.com"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/jonahsnider/wpilog-parser.git",
+		"directory": "packages/wpilib-protobuf"
+	},
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"exports": {
+		".": "./dist/index.mjs",
+		"./package.json": "./package.json"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"scripts": {
+		"api:check": "api-extractor run",
+		"api:update": "api-extractor run --local",
+		"bench": "vp test bench",
+		"build": "vp pack",
+		"dev": "vp pack --watch",
+		"prepublishOnly": "pnpm build && pnpm api:check",
+		"test": "vp test run"
+	},
+	"dependencies": {
+		"@bufbuild/protobuf": "^2.17.0"
+	},
+	"devDependencies": {
+		"@microsoft/api-extractor": "7.60.1",
+		"vite-plus": "catalog:",
+		"vitest": "catalog:"
+	},
+	"tsdocMetadata": "./dist/tsdoc-metadata.json"
+}

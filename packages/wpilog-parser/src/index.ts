@@ -16,6 +16,8 @@ export {
 	isDataRecord,
 	RecordType,
 	type StructPayload,
+	type ProtobufPayload,
+	type ProtobufValue,
 } from './types.ts';
 export { catalogEntries, type CatalogEntry } from './catalog.ts';
 export { parseStructSpecification } from './struct/parse-struct.ts';

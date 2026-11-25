@@ -6,6 +6,7 @@ import {
 	readControlRecordPayload,
 	withProgress,
 } from './read-records.ts';
+import { type ProtobufPayload, ProtobufRegistry } from 'wpilib-protobuf';
 import { StructDecodeQueue } from './struct/struct-decode-queue.ts';
 import { StructRegistry } from './struct/struct-registry.ts';
 import { ByteOffset } from './byte-offset.ts';
@@ -25,8 +26,11 @@ const TEXT_DECODER = new TextDecoder();
 const STRUCT_PREFIX = 'struct:';
 const STRUCT_ARRAY_SUFFIX = '[]';
 const STRUCT_SCHEMA_NAME_PREFIX = '/.schema/' + STRUCT_PREFIX;
+const PROTOBUF_PREFIX = 'proto:';
+// The type of `/.schema/proto:<file>` entries, which WPILib logs for each `.proto` file a protobuf entry uses
+const PROTOBUF_SCHEMA_TYPE = 'proto:FileDescriptorProto';
 
-type PlainDataRecord = Exclude<DataRecord, { structName: string }>;
+type PlainDataRecord = Exclude<DataRecord, { structName: string } | { messageName: string }>;
 
 /**
  * Build a non-struct data record as one flat object literal.
@@ -83,6 +87,12 @@ export class RecordDecoder {
 	private readonly recordEntries = new WeakMap<RawRecord, CatalogEntry>();
 	private readonly structDecodeQueue: StructDecodeQueue;
 	private readonly structRegistry: StructRegistry;
+	private readonly protobufRegistry = new ProtobufRegistry();
+	// Records of protobuf messages whose schema hasn't been logged yet, by message name
+	private readonly queuedProtobufs = new Map<
+		string,
+		{ entry: CatalogEntry; timestamp: number; payload: Uint8Array }[]
+	>();
 	private readonly options: DecodeRecordsOptions;
 
 	constructor(options: DecodeRecordsOptions) {
@@ -201,6 +211,9 @@ export class RecordDecoder {
 			payloadOffset === 0 && payloadSize === bytes.byteLength
 				? bytes
 				: bytes.subarray(payloadOffset, payloadOffset + payloadSize);
+		if (entry.type.startsWith(PROTOBUF_PREFIX)) {
+			return this.decodeProtobuf(entry, timestamp, payload);
+		}
 		const raw = { entryId: entry.entryId, timestamp, payload };
 		const payloadView = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
 		const decoded = decodeNonScalarPayload(raw, entry, payloadView, this.structRegistry, this.structDecodeQueue);
@@ -208,6 +221,53 @@ export class RecordDecoder {
 			this.recordEntries.set(raw, entry);
 		}
 		return decoded;
+	}
+
+	/** Register a `/.schema/proto:*` file descriptor, or decode a protobuf message, queuing it until its schema arrives */
+	private decodeProtobuf(entry: CatalogEntry, timestamp: number, payload: Uint8Array): DecodedRecord | undefined {
+		if (entry.type === PROTOBUF_SCHEMA_TYPE) {
+			try {
+				this.protobufRegistry.register(payload);
+			} catch (cause) {
+				throw diagnostics.WPILOG_R0015({ name: entry.name, cause });
+			}
+			for (const [messageName, queued] of this.queuedProtobufs) {
+				if (!this.protobufRegistry.has(messageName)) continue;
+				this.queuedProtobufs.delete(messageName);
+				for (const record of queued) {
+					try {
+						this.delayedRecords.push(this.decodeProtobuf(record.entry, record.timestamp, record.payload)!);
+					} catch (error) {
+						// Caught per record, so one invalid value doesn't drop the other values waiting for this schema
+						if (this.options.invalidValues !== 'raw') throw error;
+						this.delayedRecords.push(
+							dataRecord(record.entry, record.timestamp, RecordType.Raw, new Uint8Array(record.payload)),
+						);
+					}
+				}
+			}
+			// Copy the bytes instead of a view over the original log buffer
+			return dataRecord(entry, timestamp, RecordType.Raw, new Uint8Array(payload));
+		}
+
+		const messageName = entry.type.slice(PROTOBUF_PREFIX.length);
+		let decoded: ProtobufPayload | string;
+		try {
+			decoded = this.protobufRegistry.decode(messageName, payload);
+		} catch (cause) {
+			throw diagnostics.WPILOG_R0016({ name: entry.name, messageName, cause });
+		}
+		if (typeof decoded === 'string') {
+			const queued = this.queuedProtobufs.get(messageName);
+			const record = { entry, timestamp, payload };
+			if (queued) {
+				queued.push(record);
+			} else {
+				this.queuedProtobufs.set(messageName, [record]);
+			}
+			return undefined;
+		}
+		return { entry, timestamp, type: RecordType.Protobuf, messageName, payload: decoded };
 	}
 }
 

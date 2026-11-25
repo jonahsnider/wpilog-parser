@@ -1,4 +1,6 @@
+import type { ProtobufPayload } from 'wpilib-protobuf';
 import type { StructPayload } from 'wpilib-struct';
+export type { ProtobufPayload, ProtobufValue } from 'wpilib-protobuf';
 export type { StructPayload } from 'wpilib-struct';
 
 /** The parsed WPILOG file header. */
@@ -78,6 +80,7 @@ export const RecordType = {
 	StringArray: 'string[]',
 	Struct: 'struct',
 	StructArray: 'struct[]',
+	Protobuf: 'protobuf',
 	Raw: 'raw',
 } as const;
 
@@ -123,5 +126,11 @@ export type DecodedRecord = {
 			| { type: typeof RecordType.StringArray; payload: string[] }
 			| { type: typeof RecordType.Struct; structName: string; payload: StructPayload }
 			| { type: typeof RecordType.StructArray; structName: string; payload: StructPayload[] }
+			| {
+					type: typeof RecordType.Protobuf;
+					/** The message's type, ex. `wpi.proto.ProtobufPose2d` for a `proto:wpi.proto.ProtobufPose2d` entry */
+					messageName: string;
+					payload: ProtobufPayload;
+			  }
 	  ))
 );

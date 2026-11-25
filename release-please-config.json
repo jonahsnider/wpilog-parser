@@ -10,6 +10,10 @@
 		"packages/wpilib-struct": {
 			"release-type": "node",
 			"component": "wpilib-struct"
+		},
+		"packages/wpilib-protobuf": {
+			"release-type": "node",
+			"component": "wpilib-protobuf"
 		}
 	}
 }

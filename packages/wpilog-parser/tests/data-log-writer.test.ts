@@ -9,6 +9,7 @@ import {
 	isDataRecord,
 	parseDataLog,
 	readRecords,
+	RecordType,
 } from '../src/index.ts';
 import { LOG_FIXTURES } from './helpers/log-fixtures.ts';
 
@@ -32,6 +33,8 @@ async function replay(original: Uint8Array): Promise<Uint8Array> {
 	const entryIds = new Map<number, number>();
 	for (const record of parseDataLog(original)) {
 		if (isDataRecord(record)) {
+			// The writer takes protobuf messages as encoded bytes, which the fixtures don't have
+			if (record.type === RecordType.Protobuf) throw new TypeError('Unexpected protobuf record');
 			writer.append(entryIds.get(record.entry.entryId)!, record.payload, record.timestamp);
 			continue;
 		}

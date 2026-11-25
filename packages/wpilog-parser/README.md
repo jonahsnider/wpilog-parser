@@ -28,7 +28,10 @@ Use `readRecords()` and `decodeRecords()` separately when you need access to raw
 Struct schemas are compiled lazily into reusable decoders, and struct payloads are returned as plain objects, including nested structs and arrays of structs.
 In environments where Content Security Policy blocks runtime code generation, decoding falls back to a CSP-safe implementation.
 
-A value that can't be decoded for its entry's type, such as a struct value that doesn't match its schema or an invalid struct schema, throws by default.
+Protobuf entries, such as a `proto:wpi.proto.ProtobufPose2d` entry, are decoded with the `/.schema/proto:*` schemas WPILib logs for them, into `protobuf` records with a plain object payload. See [wpilib-protobuf](https://github.com/jonahsnider/wpilog-parser/tree/main/packages/wpilib-protobuf#readme) for how fields are decoded.
+Struct and protobuf values logged before their schemas are yielded once the schemas arrive, with their original timestamps.
+
+A value that can't be decoded for its entry's type, such as a struct or protobuf value that doesn't match its schema or an invalid schema, throws by default.
 Apps that should show what they can of a damaged log can pass `{ invalidValues: 'raw' }` to get these as `raw` records holding their bytes instead, and keep reading.
 
 ### Streaming

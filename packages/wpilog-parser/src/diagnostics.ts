@@ -65,6 +65,14 @@ export const diagnostics = defineDiagnostics({
 			fix: 'Register the struct definition before decoding its records.',
 		},
 		// WPILOG_R0014 was published for unsupported bit fields and must not be reused.
+		WPILOG_R0015: {
+			why: (p: { name: string }) => `Invalid protobuf schema in ${p.name}`,
+			fix: 'Check that the entry holds a serialized google.protobuf.FileDescriptorProto.',
+		},
+		WPILOG_R0016: {
+			why: (p: { name: string; messageName: string }) => `Invalid ${p.messageName} protobuf message in ${p.name}`,
+			fix: 'Check that the entry was written with the schema logged for its type.',
+		},
 		WPILOG_W0001: {
 			why: (p: { entryId: number }) => `Entry ID ${p.entryId} is not started`,
 			fix: 'Use an ID returned by start() for an entry that has not been finished.',

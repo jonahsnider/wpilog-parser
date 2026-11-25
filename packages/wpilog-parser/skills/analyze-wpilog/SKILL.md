@@ -55,6 +55,9 @@ for (const record of parseDataLog(bytes)) {
 }
 ```
 
+Protobuf entries (types like `proto:wpi.proto.ProtobufPose2d`) are decoded the same way, as `RecordType.Protobuf` records with a `messageName` and the same field names as WPILib's structs.
+Unset message fields are left out of protobuf payloads, so check for them before reading nested fields.
+
 ### Strict mode
 
 ```ts
@@ -65,7 +68,7 @@ for (const record of parseDataLog(bytes, { strict: true })) {
 
 ### Invalid values
 
-Parsing throws on a value that can't be decoded, such as a struct value that doesn't match its schema. To read the rest of the log anyway, yield those values as `raw` records:
+Parsing throws on a value that can't be decoded, such as a struct or protobuf value that doesn't match its schema. To read the rest of the log anyway, yield those values as `raw` records:
 
 ```ts
 for (const record of parseDataLog(bytes, { invalidValues: 'raw' })) {

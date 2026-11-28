@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.5.0](https://github.com/jonahsnider/wpilog-parser/compare/wpilog-parser-v4.4.1...wpilog-parser-v4.5.0) (2026-11-28)
+
+
+### Features
+
+* index logs and decode entries on demand with indexDataLog ([0459188](https://github.com/jonahsnider/wpilog-parser/commit/0459188d0441adfa25f57a516ed7b837b6ff8073))
+
 ## [4.4.1](https://github.com/jonahsnider/wpilog-parser/compare/wpilog-parser-v4.4.0...wpilog-parser-v4.4.1) (2026-11-25)
 
 

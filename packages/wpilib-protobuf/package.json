@@ -38,7 +38,7 @@
 		"@bufbuild/protobuf": "^2.17.0"
 	},
 	"devDependencies": {
-		"@microsoft/api-extractor": "7.60.1",
+		"@microsoft/api-extractor": "7.60.2",
 		"vite-plus": "catalog:",
 		"vitest": "catalog:"
 	},

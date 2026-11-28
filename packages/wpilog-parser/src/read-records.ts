@@ -111,7 +111,7 @@ export function truncatedHeaderError(byteLength: number): Error {
 	return byteLength < 12 ? diagnostics.WPILOG_R0002() : diagnostics.WPILOG_R0004();
 }
 
-function openDataLog(input: DataLogInput): {
+export function openDataLog(input: DataLogInput): {
 	bytes: Uint8Array;
 	view: DataView;
 	header: DataLogHeader;
@@ -126,7 +126,7 @@ function openDataLog(input: DataLogInput): {
 	return { bytes, view, ...opened };
 }
 
-function readVarInt(view: DataView, offset: number, length: number): number {
+export function readVarInt(view: DataView, offset: number, length: number): number {
 	switch (length) {
 		case 1:
 			return view.getUint8(offset);
@@ -141,7 +141,7 @@ function readVarInt(view: DataView, offset: number, length: number): number {
 	}
 }
 
-function readTimestamp(view: DataView, offset: number, length: number): number {
+export function readTimestamp(view: DataView, offset: number, length: number): number {
 	switch (length) {
 		case 1:
 			return view.getUint8(offset);

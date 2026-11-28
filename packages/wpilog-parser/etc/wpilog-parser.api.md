@@ -52,6 +52,23 @@ export type DataLogHeader = {
 };
 
 // @public
+export type DataLogIndex = {
+    header: DataLogHeader;
+    bytes: Uint8Array;
+    entries: IndexedEntry[];
+    bytesRead: number;
+    truncated: boolean;
+    error: Error | undefined;
+};
+
+// @public
+export class DataLogIndexDecoder {
+    constructor(index: DataLogIndex, options?: Pick<DecodeRecordsOptions, 'invalidValues'>);
+    decode(entry: IndexedEntry, index: number): DataRecord | undefined;
+    decodeNumbers(entry: IndexedEntry): Float64Array<ArrayBuffer> | undefined;
+}
+
+// @public
 export type DataLogInput = Uint8Array | ArrayBuffer;
 
 // @public
@@ -161,6 +178,20 @@ export type EnumSpecification = Map<string, bigint>;
 export type FinishControlRecord = {
     controlRecordType: typeof ControlRecordType.Finish;
     entryId: number;
+};
+
+// @public
+export function indexDataLog(input: DataLogInput, options?: {
+    strict?: boolean;
+}): DataLogIndex;
+
+// @public
+export type IndexedEntry = CatalogEntry & {
+    finished: boolean;
+    length: number;
+    timestamps: Float64Array<ArrayBuffer>;
+    payloadOffsets: Float64Array<ArrayBuffer>;
+    payloadSizes: Uint32Array<ArrayBuffer>;
 };
 
 // @public

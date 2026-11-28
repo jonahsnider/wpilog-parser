@@ -52,6 +52,28 @@ parser.end();
 
 `push()` keeps only the bytes of a record split between chunks. `bytesRead` and `truncated` report progress and a cut-off last record, like they do on `parseDataLog()`'s generator.
 
+### Reading entries on demand
+
+`indexDataLog()` finds where each entry's records are without decoding their values, which is much faster than decoding the whole log. `DataLogIndexDecoder` then decodes the values of only the entries you need, in any order, so an app can show a few entries of a large log right away and decode the rest later.
+
+```ts
+import { DataLogIndexDecoder, indexDataLog } from 'wpilog-parser';
+
+const index = indexDataLog(bytes);
+const decoder = new DataLogIndexDecoder(index);
+
+const voltage = index.entries.find((entry) => entry.name === '/SystemStats/BatteryVoltage')!;
+// Every value as a number, without making a record for each
+const values = decoder.decodeNumbers(voltage);
+for (let i = 0; i < voltage.length; i++) {
+	console.log(voltage.timestamps[i], values?.[i] ?? decoder.decode(voltage, i)?.payload);
+}
+```
+
+Each started entry has an `IndexedEntry` with its name, type, latest metadata, and the timestamp, payload offset, and payload size of each of its records in typed arrays. An entry ID that was started again after it finished has an entry for each start.
+The decoder reads every struct and protobuf schema in the log before decoding any value, so values logged before their schemas decode too.
+Indexing stops at a damaged record and reports why in `error`, keeping the records before it. With `{ strict: true }`, a record of an entry that was never started is damage, like it is for `parseDataLog()`.
+
 ### Writing logs
 
 ```ts

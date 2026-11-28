@@ -1,5 +1,13 @@
 import { afterEach, test, describe, vi } from 'vite-plus/test';
-import { catalogEntries, DataLogStreamParser, decodeRecords, parseDataLog, readRecords } from '../../src/index.ts';
+import {
+	catalogEntries,
+	DataLogIndexDecoder,
+	DataLogStreamParser,
+	decodeRecords,
+	indexDataLog,
+	parseDataLog,
+	readRecords,
+} from '../../src/index.ts';
 import { FIXTURES } from './shared.ts';
 
 // Select the production CSP closure decoder outside timed parsing, including warmup.
@@ -42,6 +50,27 @@ for (const fixture of FIXTURES) {
 				}
 			};
 			await bench.compare(bench('parseDataLog', parse), bench('closure parseDataLog', CLOSURE_STRUCTS, parse));
+		});
+
+		test('indexDataLog', async ({ bench }) => {
+			await bench('indexDataLog', () => {
+				indexDataLog(fixture.bytes);
+			}).run();
+		});
+
+		// Index the log, then decode every value of every entry
+		test('indexDataLog + DataLogIndexDecoder', async ({ bench }) => {
+			await bench('indexDataLog + DataLogIndexDecoder', () => {
+				const index = indexDataLog(fixture.bytes);
+				const decoder = new DataLogIndexDecoder(index);
+				for (const entry of index.entries) {
+					if (decoder.decodeNumbers(entry) === undefined) {
+						for (let i = 0; i < entry.length; i++) {
+							decoder.decode(entry, i);
+						}
+					}
+				}
+			}).run();
 		});
 
 		// Chunks the size of a typical download read, with records split between them

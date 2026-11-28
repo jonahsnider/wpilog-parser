@@ -28,7 +28,7 @@ const STRUCT_ARRAY_SUFFIX = '[]';
 const STRUCT_SCHEMA_NAME_PREFIX = '/.schema/' + STRUCT_PREFIX;
 const PROTOBUF_PREFIX = 'proto:';
 // The type of `/.schema/proto:<file>` entries, which WPILib logs for each `.proto` file a protobuf entry uses
-const PROTOBUF_SCHEMA_TYPE = 'proto:FileDescriptorProto';
+export const PROTOBUF_SCHEMA_TYPE = 'proto:FileDescriptorProto';
 
 type PlainDataRecord = Exclude<DataRecord, { structName: string } | { messageName: string }>;
 
@@ -178,6 +178,18 @@ export class RecordDecoder {
 			}
 			return undefined;
 		}
+		return this.decodeEntryData(entry, timestamp, bytes, view, payloadOffset, payloadSize);
+	}
+
+	/** Decode a data record of `entry`, without looking its entry up by ID */
+	decodeEntryData(
+		entry: CatalogEntry,
+		timestamp: number,
+		bytes: Uint8Array,
+		view: DataView,
+		payloadOffset: number,
+		payloadSize: number,
+	): DecodedRecord | undefined {
 		if (this.options.invalidValues !== 'raw') {
 			return this.decodeValue(entry, timestamp, bytes, view, payloadOffset, payloadSize);
 		}

@@ -1,6 +1,7 @@
 export { readRecords, type ReadRecord, type DataLogInput, type DataLogGenerator } from './read-records.ts';
 export { decodeRecords, type DecodeRecordsOptions, parseDataLog } from './decode-records.ts';
 export { DataLogStreamParser } from './data-log-stream-parser.ts';
+export { indexDataLog, DataLogIndexDecoder, type DataLogIndex, type IndexedEntry } from './index-data-log.ts';
 export { DataLogWriter, type DataLogWriterOptions, type DataLogValue } from './data-log-writer.ts';
 export {
 	type DataLogHeader,
